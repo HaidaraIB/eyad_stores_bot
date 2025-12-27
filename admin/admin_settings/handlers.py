@@ -88,7 +88,7 @@ async def get_new_admin_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
             admin_id = int(update.message.text)
 
         try:
-            await context.bot.get_chat(chat_id=admin_id)
+            admin_chat = await context.bot.get_chat(chat_id=admin_id)
         except:
             await update.message.reply_text(text=TEXTS[lang]["user_not_found"])
             return
@@ -98,6 +98,16 @@ async def get_new_admin_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
         selected_permissions = set()
 
         with models.session_scope() as s:
+            admin = s.get(models.User, admin_id)
+            if not admin:
+                admin = models.User(
+                    user_id=admin_id,
+                    username=admin_chat.username if admin_chat.username else "",
+                    name=admin_chat.full_name,
+                    is_admin=True,
+                )
+                s.add(admin)
+                s.flush()
             admin_permissions = (
                 s.query(models.AdminPermission)
                 .filter(models.AdminPermission.admin_id == admin_id)
@@ -209,7 +219,6 @@ async def skip_or_save_permissions(update: Update, context: ContextTypes.DEFAULT
                         admin_id=admin_id, permission=permission
                     )
                     s.add(admin_permission)
-                s.commit()
         await update.callback_query.answer(
             text=TEXTS[lang]["admin_added_success"],
             show_alert=True,
@@ -238,7 +247,7 @@ add_admin_handler = ConversationHandler(
         SELECT_PERMISSIONS: [
             CallbackQueryHandler(
                 callback=toggle_permission,
-                pattern=r"^toggle_permission_[^_]+$",
+                pattern=r"^toggle_permission_",
             ),
             CallbackQueryHandler(
                 callback=skip_or_save_permissions,

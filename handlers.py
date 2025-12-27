@@ -20,6 +20,7 @@ from admin.manage_users_settings import *
 from admin.games_settings import *
 from admin.items_settings import *
 from admin.payment_methods_settings import *
+from admin.orders_settings import *
 
 from models import init_db
 
@@ -32,8 +33,21 @@ def setup_and_run():
 
     app = MyApp.build_app()
 
+    # USER SETTINGS
     app.add_handler(user_settings_handler)
     app.add_handler(change_lang_handler)
+    app.add_handler(user_profile_handler)
+
+    # USER ORDERS
+    app.add_handler(back_to_charging_balance_orders_handler)
+    app.add_handler(back_to_purchase_orders_handler)
+    app.add_handler(my_orders_handler)
+    app.add_handler(show_charging_balance_orders_handler)
+    app.add_handler(show_purchase_orders_handler)
+    app.add_handler(view_charging_balance_order_handler)
+    app.add_handler(view_purchase_order_handler)
+    app.add_handler(purchase_order_handler)
+    app.add_handler(charge_balance_handler)
 
     # ADMIN SETTINGS
     app.add_handler(show_admins_handler)
@@ -64,6 +78,21 @@ def setup_and_run():
     app.add_handler(add_payment_address_handler)
     app.add_handler(remove_payment_address_handler)
     app.add_handler(manage_payment_addresses_handler)
+
+    # ORDERS SETTINGS
+    app.add_handler(orders_settings_handler)
+    app.add_handler(show_charging_balance_orders_admin_handler)
+    app.add_handler(show_purchase_orders_admin_handler)
+    app.add_handler(view_charging_balance_order_admin_handler)
+    app.add_handler(view_purchase_order_admin_handler)
+    app.add_handler(update_order_status_handler)
+    app.add_handler(set_order_status_handler)
+    app.add_handler(back_to_order_view_handler)
+    app.add_handler(add_order_notes_handler)
+    app.add_handler(back_to_admin_charging_balance_orders_handler)
+    app.add_handler(back_to_admin_purchase_orders_handler)
+    app.add_handler(request_charging_order_handler)
+    app.add_handler(request_purchase_order_handler)
 
     # MANAGE USERS SETTINGS
     app.add_handler(manage_users_settings_handler)

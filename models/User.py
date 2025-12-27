@@ -30,5 +30,21 @@ class User(Base):
             f"Name: <b>{self.name}</b>"
         )
 
+    def stringify(self, lang):
+        """Return a formatted HTML string preview of the user properties"""
+        from common.lang_dicts import TEXTS
+        from common.common import escape_html
+
+        texts = TEXTS[lang]
+        username_text = f"@{self.username}" if self.username else texts.get("not_available", "N/A")
+        
+        lines = [
+            f"<b>{texts.get('user_id', 'ID')}:</b> <code>{self.user_id}</code>",
+            f"<b>{texts.get('username', 'Username')}:</b> {username_text}",
+            f"<b>{texts.get('name', 'Name')}:</b> <b>{escape_html(self.name)}</b>",
+        ]
+
+        return "\n".join(lines)
+
     def __repr__(self):
         return f"User(user_id={self.user_id}, username={self.username}, name={self.name}, is_admin={bool(self.is_admin)}, is_banned={bool(self.is_banned)}"

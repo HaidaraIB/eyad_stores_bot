@@ -13,6 +13,7 @@ class Permission(Enum):
     MANAGE_GAMES = "manage_games"
     MANAGE_ITEMS = "manage_items"
     MANAGE_PAYMENT_METHODS = "manage_payment_methods"
+    MANAGE_ORDERS = "manage_orders"
 
 
 class AdminPermission(Base):

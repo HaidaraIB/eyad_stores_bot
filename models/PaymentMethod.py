@@ -77,8 +77,6 @@ class PaymentMethodAddress(Base):
         sa.String, nullable=False
     )  # The actual payment address/account number
     account_name = sa.Column(sa.String, nullable=True)  # Account holder name
-    bank_name = sa.Column(sa.String, nullable=True)  # Bank name (if applicable)
-    branch = sa.Column(sa.String, nullable=True)  # Branch name (if applicable)
     additional_info = sa.Column(sa.Text, nullable=True)  # Any additional information
     is_active = sa.Column(sa.Boolean, default=True, nullable=False)
     priority = sa.Column(
@@ -121,16 +119,6 @@ class PaymentMethodAddress(Base):
         if self.account_name:
             lines.append(
                 f"<b>{texts.get('account_name', 'Account Name')}:</b> {escape_html(self.account_name)}"
-            )
-
-        if self.bank_name:
-            lines.append(
-                f"<b>{texts.get('bank_name', 'Bank Name')}:</b> {escape_html(self.bank_name)}"
-            )
-
-        if self.branch:
-            lines.append(
-                f"<b>{texts.get('branch', 'Branch')}:</b> {escape_html(self.branch)}"
             )
 
         if self.additional_info:

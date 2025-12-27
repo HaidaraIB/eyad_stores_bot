@@ -569,10 +569,8 @@ edit_payment_method_handler = ConversationHandler(
     ADDRESS_LABEL,
     ADDRESS_VALUE,
     ADDRESS_ACCOUNT_NAME,
-    ADDRESS_BANK_NAME,
-    ADDRESS_BRANCH,
     ADDRESS_ADDITIONAL_INFO,
-) = range(7)
+) = range(5)
 
 
 async def manage_payment_addresses(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -634,7 +632,7 @@ async def show_payment_addresses(update: Update, context: ContextTypes.DEFAULT_T
             text = pm.stringify(lang)
             text += f"\n\n<b>{TEXTS[lang]['payment_addresses_management']}</b>"
             text += f"\n{TEXTS[lang]['addresses_count']}: <code>{len(addresses)}</code>"
-            
+
             if addresses:
                 address_label = TEXTS[lang].get("address", "Address")
                 text += f"\n\n<b>{TEXTS[lang].get('addresses', 'Addresses')}:</b>"
@@ -647,8 +645,6 @@ async def show_payment_addresses(update: Update, context: ContextTypes.DEFAULT_T
                 reply_markup=InlineKeyboardMarkup(keyboard),
             )
         return ConversationHandler.END
-
-
 
 
 manage_payment_addresses_handler = ConversationHandler(
@@ -698,6 +694,9 @@ async def add_payment_address(update: Update, context: ContextTypes.DEFAULT_TYPE
         return ADDRESS_LABEL
 
 
+back_to_manage_payment_addresses = show_payment_addresses
+
+
 async def get_address_label(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChatAndAdmin().filter(update) and PermissionFilter(
         models.Permission.MANAGE_PAYMENT_METHODS
@@ -736,7 +735,7 @@ async def skip_address_label(update: Update, context: ContextTypes.DEFAULT_TYPE)
     ).filter(update):
         lang = get_lang(update.effective_user.id)
         context.user_data["new_address_label"] = None
-        
+
         back_buttons = [
             build_back_button("back_to_get_address_value", lang=lang),
             build_back_to_home_page_button(lang=lang)[0],
@@ -788,7 +787,7 @@ async def get_address_account_name(update: Update, context: ContextTypes.DEFAULT
         models.Permission.MANAGE_PAYMENT_METHODS
     ).filter(update):
         lang = get_lang(update.effective_user.id)
-        
+
         # If called from callback query (back button), show the account name input again
         if update.callback_query and not update.message:
             back_buttons = [
@@ -801,7 +800,7 @@ async def get_address_account_name(update: Update, context: ContextTypes.DEFAULT
                 reply_markup=InlineKeyboardMarkup(back_buttons),
             )
             return ADDRESS_ACCOUNT_NAME
-        
+
         if update.message:
             account_name = (
                 update.message.text.strip() if update.message.text.strip() else None
@@ -811,114 +810,8 @@ async def get_address_account_name(update: Update, context: ContextTypes.DEFAULT
             context.user_data["new_address_account_name"] = None
 
         back_buttons = [
-            build_skip_button("skip_address_bank_name", lang=lang),
-            build_back_button("back_to_get_address_bank_name", lang=lang),
-            build_back_to_home_page_button(lang=lang)[0],
-        ]
-        if update.message:
-            await update.message.reply_text(
-                text=TEXTS[lang]["add_payment_address_instruction_bank_name"],
-                reply_markup=InlineKeyboardMarkup(back_buttons),
-            )
-        else:
-            await update.callback_query.edit_message_text(
-                text=TEXTS[lang]["add_payment_address_instruction_bank_name"],
-                reply_markup=InlineKeyboardMarkup(back_buttons),
-            )
-        return ADDRESS_BANK_NAME
-
-
-back_to_get_address_account_name = get_address_value
-
-
-async def skip_address_account_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if PrivateChatAndAdmin().filter(update) and PermissionFilter(
-        models.Permission.MANAGE_PAYMENT_METHODS
-    ).filter(update):
-        lang = get_lang(update.effective_user.id)
-        context.user_data["new_address_account_name"] = None
-        
-        back_buttons = [
-            build_skip_button("skip_address_bank_name", lang=lang),
-            build_back_button("back_to_get_address_bank_name", lang=lang),
-            build_back_to_home_page_button(lang=lang)[0],
-        ]
-        await update.callback_query.edit_message_text(
-            text=TEXTS[lang]["add_payment_address_instruction_bank_name"],
-            reply_markup=InlineKeyboardMarkup(back_buttons),
-        )
-        return ADDRESS_BANK_NAME
-
-
-async def get_address_bank_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if PrivateChatAndAdmin().filter(update) and PermissionFilter(
-        models.Permission.MANAGE_PAYMENT_METHODS
-    ).filter(update):
-        lang = get_lang(update.effective_user.id)
-        if update.message:
-            bank_name = (
-                update.message.text.strip() if update.message.text.strip() else None
-            )
-            context.user_data["new_address_bank_name"] = bank_name
-        else:
-            context.user_data["new_address_bank_name"] = None
-
-        back_buttons = [
-            build_skip_button("skip_address_bank_name", lang=lang),
-            build_back_button("back_to_get_address_bank_name", lang=lang),
-            build_back_to_home_page_button(lang=lang)[0],
-        ]
-        if update.message:
-            await update.message.reply_text(
-                text=TEXTS[lang]["add_payment_address_instruction_branch"],
-                reply_markup=InlineKeyboardMarkup(back_buttons),
-            )
-        else:
-            await update.callback_query.edit_message_text(
-                text=TEXTS[lang]["add_payment_address_instruction_branch"],
-                reply_markup=InlineKeyboardMarkup(back_buttons),
-            )
-        return ADDRESS_BRANCH
-
-
-back_to_get_address_bank_name = get_address_account_name
-
-
-async def skip_address_bank_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if PrivateChatAndAdmin().filter(update) and PermissionFilter(
-        models.Permission.MANAGE_PAYMENT_METHODS
-    ).filter(update):
-        lang = get_lang(update.effective_user.id)
-        context.user_data["new_address_bank_name"] = None
-        
-        back_buttons = [
-            build_skip_button("skip_address_branch", lang=lang),
-            build_back_button("back_to_get_address_branch", lang=lang),
-            build_back_to_home_page_button(lang=lang)[0],
-        ]
-        await update.callback_query.edit_message_text(
-            text=TEXTS[lang]["add_payment_address_instruction_branch"],
-            reply_markup=InlineKeyboardMarkup(back_buttons),
-        )
-        return ADDRESS_BRANCH
-
-
-async def get_address_branch(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if PrivateChatAndAdmin().filter(update) and PermissionFilter(
-        models.Permission.MANAGE_PAYMENT_METHODS
-    ).filter(update):
-        lang = get_lang(update.effective_user.id)
-        if update.message:
-            branch = (
-                update.message.text.strip() if update.message.text.strip() else None
-            )
-            context.user_data["new_address_branch"] = branch
-        else:
-            context.user_data["new_address_branch"] = None
-
-        back_buttons = [
-            build_skip_button("skip_address_branch", lang=lang),
-            build_back_button("back_to_get_address_branch", lang=lang),
+            build_skip_button("skip_address_additional_info", lang=lang),
+            build_back_button("back_to_get_address_additional_info", lang=lang),
             build_back_to_home_page_button(lang=lang)[0],
         ]
         if update.message:
@@ -934,16 +827,16 @@ async def get_address_branch(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return ADDRESS_ADDITIONAL_INFO
 
 
-back_to_get_address_branch = get_address_bank_name
+back_to_get_address_account_name = get_address_value
 
 
-async def skip_address_branch(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def skip_address_account_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChatAndAdmin().filter(update) and PermissionFilter(
         models.Permission.MANAGE_PAYMENT_METHODS
     ).filter(update):
         lang = get_lang(update.effective_user.id)
-        context.user_data["new_address_branch"] = None
-        
+        context.user_data["new_address_account_name"] = None
+
         back_buttons = [
             build_skip_button("skip_address_additional_info", lang=lang),
             build_back_button("back_to_get_address_additional_info", lang=lang),
@@ -969,8 +862,6 @@ async def skip_address_additional_info(
         label = context.user_data.get("new_address_label")
         address = context.user_data.get("new_address_value")
         account_name = context.user_data.get("new_address_account_name")
-        bank_name = context.user_data.get("new_address_bank_name")
-        branch = context.user_data.get("new_address_branch")
 
         # Get the highest priority and add 1
         with models.session_scope() as s:
@@ -987,8 +878,6 @@ async def skip_address_additional_info(
                 label=label,
                 address=address,
                 account_name=account_name,
-                bank_name=bank_name,
-                branch=branch,
                 additional_info=additional_info,
                 is_active=True,
                 priority=priority,
@@ -1000,8 +889,6 @@ async def skip_address_additional_info(
         context.user_data.pop("new_address_label", None)
         context.user_data.pop("new_address_value", None)
         context.user_data.pop("new_address_account_name", None)
-        context.user_data.pop("new_address_bank_name", None)
-        context.user_data.pop("new_address_branch", None)
 
         await update.callback_query.answer(
             text=TEXTS[lang]["payment_address_added_success"],
@@ -1021,7 +908,7 @@ async def get_address_additional_info(
         models.Permission.MANAGE_PAYMENT_METHODS
     ).filter(update):
         lang = get_lang(update.effective_user.id)
-        
+
         # If called from callback query (back button), show the keyboard again
         if update.callback_query and not update.message:
             back_buttons = [
@@ -1034,7 +921,7 @@ async def get_address_additional_info(
                 reply_markup=InlineKeyboardMarkup(back_buttons),
             )
             return ADDRESS_ADDITIONAL_INFO
-        
+
         if update.message:
             additional_info = (
                 update.message.text.strip() if update.message.text.strip() else None
@@ -1046,8 +933,6 @@ async def get_address_additional_info(
         label = context.user_data.get("new_address_label")
         address = context.user_data.get("new_address_value")
         account_name = context.user_data.get("new_address_account_name")
-        bank_name = context.user_data.get("new_address_bank_name")
-        branch = context.user_data.get("new_address_branch")
 
         # Get the highest priority and add 1
         with models.session_scope() as s:
@@ -1064,8 +949,6 @@ async def get_address_additional_info(
                 label=label,
                 address=address,
                 account_name=account_name,
-                bank_name=bank_name,
-                branch=branch,
                 additional_info=additional_info,
                 is_active=True,
                 priority=priority,
@@ -1077,8 +960,6 @@ async def get_address_additional_info(
         context.user_data.pop("new_address_label", None)
         context.user_data.pop("new_address_value", None)
         context.user_data.pop("new_address_account_name", None)
-        context.user_data.pop("new_address_bank_name", None)
-        context.user_data.pop("new_address_branch", None)
 
         await update.message.reply_text(
             text=TEXTS[lang]["payment_address_added_success"],
@@ -1090,7 +971,7 @@ async def get_address_additional_info(
         return ConversationHandler.END
 
 
-back_to_get_address_additional_info = get_address_branch
+back_to_get_address_additional_info = get_address_account_name
 
 
 add_payment_address_handler = ConversationHandler(
@@ -1123,20 +1004,6 @@ add_payment_address_handler = ConversationHandler(
                 skip_address_account_name, r"^skip_address_account_name$"
             ),
         ],
-        ADDRESS_BANK_NAME: [
-            MessageHandler(
-                callback=get_address_bank_name,
-                filters=filters.TEXT & ~filters.COMMAND,
-            ),
-            CallbackQueryHandler(skip_address_bank_name, r"^skip_address_bank_name$"),
-        ],
-        ADDRESS_BRANCH: [
-            MessageHandler(
-                callback=get_address_branch,
-                filters=filters.TEXT & ~filters.COMMAND,
-            ),
-            CallbackQueryHandler(skip_address_branch, r"^skip_address_branch$"),
-        ],
         ADDRESS_ADDITIONAL_INFO: [
             MessageHandler(
                 callback=get_address_additional_info,
@@ -1158,14 +1025,12 @@ add_payment_address_handler = ConversationHandler(
             back_to_get_address_account_name, r"^back_to_get_address_account_name$"
         ),
         CallbackQueryHandler(
-            back_to_get_address_bank_name, r"^back_to_get_address_bank_name$"
-        ),
-        CallbackQueryHandler(
-            back_to_get_address_branch, r"^back_to_get_address_branch$"
-        ),
-        CallbackQueryHandler(
             back_to_get_address_additional_info,
             r"^back_to_get_address_additional_info$",
+        ),
+        CallbackQueryHandler(
+            back_to_manage_payment_addresses,
+            r"^back_to_manage_payment_addresses$",
         ),
     ],
 )
@@ -1272,5 +1137,9 @@ remove_payment_address_handler = ConversationHandler(
         manage_payment_addresses_handler,
         admin_command,
         back_to_admin_home_page_handler,
+        CallbackQueryHandler(
+            back_to_manage_payment_addresses,
+            r"^back_to_manage_payment_addresses$",
+        ),
     ],
 )

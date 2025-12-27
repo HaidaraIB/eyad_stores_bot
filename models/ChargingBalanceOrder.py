@@ -51,3 +51,36 @@ class ChargingBalanceOrder(Base):
             f"ChargingBalanceOrder(id={self.id}, user_id={self.user_id}, "
             f"amount={self.amount}, status={self.status.value})"
         )
+
+    def stringify(self, lang):
+        """Return a formatted HTML string preview of the charging balance order properties"""
+        from common.lang_dicts import TEXTS
+        from common.common import escape_html, format_datetime, format_float
+
+        texts = TEXTS[lang]
+        status_text = texts.get(f"order_status_{self.status.value}", self.status.value)
+        
+        lines = [
+            f"<b>{texts['order_details']}</b>",
+            "",
+            f"<b>{texts['order_id']}:</b> <code>{self.id}</code>",
+            f"<b>{texts['order_status']}:</b> {status_text}",
+            f"<b>{texts['order_amount']}:</b> <code>{format_float(self.amount)}</code>",
+            f"<b>{texts['order_date']}:</b> <code>{format_datetime(self.created_at)}</code>",
+        ]
+
+        if self.payment_method_address:
+            pm = self.payment_method_address.payment_method
+            lines.append(f"<b>{texts['payment_method']}:</b> {escape_html(pm.name)}")
+            lines.append(f"<b>{texts['payment_address']}:</b> <code>{escape_html(self.payment_method_address.address)}</code>")
+
+        if self.payment_proof:
+            lines.append("")
+            lines.append(f"<b>{texts['payment_proof']}:</b> ✅")
+
+        if self.admin_notes:
+            lines.append("")
+            lines.append(f"<b>{texts.get('admin_notes', 'Admin Notes')}:</b>")
+            lines.append(f"<i>{escape_html(self.admin_notes)}</i>")
+
+        return "\n".join(lines)

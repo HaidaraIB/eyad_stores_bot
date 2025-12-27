@@ -15,6 +15,12 @@ def build_user_keyboard(lang: models.Language):
     keyboard = [
         [
             InlineKeyboardButton(
+                text=BUTTONS[lang]["purchase_order"],
+                callback_data="purchase_order",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
                 text=BUTTONS[lang]["settings"],
                 callback_data="user_settings",
             ),
@@ -62,6 +68,12 @@ def build_admin_keyboard(
                 InlineKeyboardButton(
                     text=BUTTONS[lang]["payment_methods_settings"],
                     callback_data="payment_methods_settings",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=BUTTONS[lang]["orders_settings"],
+                    callback_data="orders_settings",
                 )
             ],
             [
@@ -161,6 +173,16 @@ def build_admin_keyboard(
                     InlineKeyboardButton(
                         text=BUTTONS[lang]["payment_methods_settings"],
                         callback_data="payment_methods_settings",
+                    )
+                ]
+            )
+
+        if HasPermission.check(user_id, models.Permission.MANAGE_ORDERS):
+            keyboard.append(
+                [
+                    InlineKeyboardButton(
+                        text=BUTTONS[lang]["orders_settings"],
+                        callback_data="orders_settings",
                     )
                 ]
             )
