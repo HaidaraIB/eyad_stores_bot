@@ -15,13 +15,13 @@ from common.keyboards import (
     build_back_to_home_page_button,
     build_keyboard,
     build_back_button,
-    build_skip_button,
     build_user_keyboard,
 )
 from common.lang_dicts import TEXTS, get_lang
 from common.back_to_home_page import back_to_user_home_page_handler
-from common.common import escape_html, format_datetime, format_float
+from common.common import escape_html, format_float
 from custom_filters import PrivateChat
+from Config import Config
 from start import start_command
 import models
 
@@ -105,7 +105,12 @@ user_profile_handler = CallbackQueryHandler(
 
 
 # Charging balance order conversation states
-CHARGE_BALANCE_AMOUNT, CHARGE_BALANCE_PAYMENT_METHOD, CHARGE_BALANCE_PAYMENT_ADDRESS, CHARGE_BALANCE_PROOF = range(4)
+(
+    CHARGE_BALANCE_AMOUNT,
+    CHARGE_BALANCE_PAYMENT_METHOD,
+    CHARGE_BALANCE_PAYMENT_ADDRESS,
+    CHARGE_BALANCE_PROOF,
+) = range(4)
 
 
 async def charge_balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -156,12 +161,18 @@ async def get_charge_balance_payment_method(
             address_keyboard = build_keyboard(
                 columns=1,
                 texts=[
-                    addr.label if addr.label else f"{TEXTS[lang].get('address', 'Address')} #{addr.id}"
+                    (
+                        addr.label
+                        if addr.label
+                        else f"{TEXTS[lang].get('address', 'Address')} #{addr.id}"
+                    )
                     for addr in addresses
                 ],
                 buttons_data=[f"charge_addr_{addr.id}" for addr in addresses],
             )
-            address_keyboard.append(build_back_button("back_to_charge_balance_pm", lang=lang))
+            address_keyboard.append(
+                build_back_button("back_to_charge_balance_pm", lang=lang)
+            )
             address_keyboard.append(
                 build_back_to_home_page_button(lang=lang, is_admin=False)[0]
             )
@@ -208,7 +219,9 @@ async def get_charge_balance_amount(update: Update, context: ContextTypes.DEFAUL
                 texts=[pm.name for pm in payment_methods],
                 buttons_data=[f"charge_pm_{pm.id}" for pm in payment_methods],
             )
-            pm_keyboard.append(build_back_button("back_to_charge_balance_amount", lang=lang))
+            pm_keyboard.append(
+                build_back_button("back_to_charge_balance_amount", lang=lang)
+            )
             pm_keyboard.append(
                 build_back_to_home_page_button(lang=lang, is_admin=False)[0]
             )
@@ -323,29 +336,35 @@ async def get_charge_balance_proof(update: Update, context: ContextTypes.DEFAULT
             notification_text += f"Order ID: <code>{order_id}</code>\n"
             notification_text += f"User: {update.effective_user.mention_html()}\n"
             notification_text += f"Amount: <code>{format_float(amount)}</code>\n"
-            notification_text += f"Status: {TEXTS[models.Language.ENGLISH]['order_status_pending']}"
-            
+            notification_text += (
+                f"Status: {TEXTS[models.Language.ENGLISH]['order_status_pending']}"
+            )
+
             # Get all admins with MANAGE_ORDERS permission (including owner)
             with models.session_scope() as s:
                 # Get owner
                 admin_ids = [Config.OWNER_ID]
-                
+
                 # Get all admins with MANAGE_ORDERS permission
-                permissions = s.query(models.AdminPermission).filter(
-                    models.AdminPermission.permission == models.Permission.MANAGE_ORDERS
-                ).all()
-                
+                permissions = (
+                    s.query(models.AdminPermission)
+                    .filter(
+                        models.AdminPermission.permission
+                        == models.Permission.MANAGE_ORDERS
+                    )
+                    .all()
+                )
+
                 for perm in permissions:
                     if perm.admin_id not in admin_ids:
                         admin_ids.append(perm.admin_id)
-            
+
             # Send notification to all admins
             for admin_id in admin_ids:
                 try:
                     await context.bot.send_message(
                         chat_id=admin_id,
                         text=notification_text,
-                        parse_mode="HTML",
                     )
                     # Send payment proof
                     if payment_proof:
@@ -412,7 +431,9 @@ charge_balance_handler = ConversationHandler(
         start_command,
         back_to_user_home_page_handler,
         CallbackQueryHandler(back_to_charge_balance_pm, r"^back_to_charge_balance_pm$"),
-        CallbackQueryHandler(back_to_charge_balance_addr, r"^back_to_charge_balance_addr$"),
+        CallbackQueryHandler(
+            back_to_charge_balance_addr, r"^back_to_charge_balance_addr$"
+        ),
         CallbackQueryHandler(
             back_to_charge_balance_amount, r"^back_to_charge_balance_amount$"
         ),

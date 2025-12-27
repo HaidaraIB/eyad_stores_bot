@@ -21,10 +21,16 @@ def build_user_keyboard(lang: models.Language):
         ],
         [
             InlineKeyboardButton(
+                text=BUTTONS[lang]["instant_purchase"],
+                callback_data="instant_purchase",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
                 text=BUTTONS[lang]["settings"],
                 callback_data="user_settings",
             ),
-        ]
+        ],
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -92,6 +98,12 @@ def build_admin_keyboard(
                 InlineKeyboardButton(
                     text=BUTTONS[lang]["broadcast"],
                     callback_data="broadcast",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=BUTTONS[lang].get("general_settings", "General Settings ⚙️"),
+                    callback_data="general_settings",
                 )
             ],
         ]
@@ -183,6 +195,18 @@ def build_admin_keyboard(
                     InlineKeyboardButton(
                         text=BUTTONS[lang]["orders_settings"],
                         callback_data="orders_settings",
+                    )
+                ]
+            )
+
+        if HasPermission.check(user_id, models.Permission.MANAGE_GENERAL_SETTINGS):
+            keyboard.append(
+                [
+                    InlineKeyboardButton(
+                        text=BUTTONS[lang].get(
+                            "general_settings", "General Settings ⚙️"
+                        ),
+                        callback_data="general_settings",
                     )
                 ]
             )

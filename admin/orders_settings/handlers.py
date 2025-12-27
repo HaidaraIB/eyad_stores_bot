@@ -486,7 +486,6 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await context.bot.send_message(
                     chat_id=user_obj.user_id,
                     text=notification_text,
-                    parse_mode="HTML",
                 )
             except:
                 pass

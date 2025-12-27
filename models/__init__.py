@@ -8,3 +8,4 @@ from models.PurchaseOrder import PurchaseOrder, PurchaseOrderStatus
 from models.PaymentMethod import PaymentMethod, PaymentMethodAddress, PaymentMethodType
 from models.Game import Game
 from models.Item import Item, ItemType
+from models.GeneralSettings import GeneralSettings

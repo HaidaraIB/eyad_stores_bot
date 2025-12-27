@@ -46,3 +46,18 @@ def format_float(f: float):
 
 def escape_html(text):
     return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def get_exchange_rate():
+    """Get USD to Sudan currency exchange rate from database"""
+    from models.DB import session_scope
+    with session_scope() as session:
+        settings = session.query(models.GeneralSettings).first()
+        if settings:
+            return settings.usd_to_sudan_rate
+        else:
+            # Create default settings if not exists
+            settings = models.GeneralSettings()
+            session.add(settings)
+            session.commit()
+            return 1.0

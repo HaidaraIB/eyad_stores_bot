@@ -105,6 +105,7 @@ TEXTS = {
         "permission_manage_games": "إدارة الألعاب",
         "permission_manage_items": "إدارة العناصر",
         "permission_manage_payment_methods": "إدارة طرق الدفع",
+        "permission_manage_general_settings": "إدارة الإعدادات العامة",
         "toggle_permission": "تبديل الصلاحية",
         "all_permissions": "جميع الصلاحيات",
         "no_permissions_selected": "لم يتم اختيار أي صلاحيات",
@@ -295,12 +296,22 @@ TEXTS = {
         "order_status_refunded": "مسترد",
         "order_status_failed": "فشل",
         "insufficient_balance": "رصيدك غير كافٍ ❌\nرصيدك الحالي: {balance}\nالسعر المطلوب: {price}",
+        "insufficient_balance_charge": "رصيدك غير كافٍ ❌\nرصيدك الحالي: {balance} SDG\nالسعر المطلوب: {price} SDG\n\nيرجى شحن رصيدك أولاً 💰",
         "item_not_found": "العنصر غير موجود أو غير نشط ❌",
         "order_not_found": "الطلب غير موجود ❌",
         "admin_notes": "ملاحظات الآدمن",
         "select_order": "اختر طلباً لعرضه:",
         "orders_settings": "إدارة الطلبات 📋",
         "orders_settings_title": "إدارة الطلبات 📋",
+        # General Settings
+        "general_settings_title": "الإعدادات العامة ⚙️",
+        "current_usd_to_sudan_rate": "سعر الصرف الحالي: <code>{rate}</code>",
+        "enter_usd_to_sudan_rate": (
+            "أدخل سعر صرف الدولار إلى العملة السودانية:\n"
+            "السعر الحالي: <code>{current_rate}</code>"
+        ),
+        "invalid_rate": "سعر الصرف غير صحيح ❌\nيجب أن يكون رقماً موجباً",
+        "rate_updated_success": "تم تحديث سعر الصرف بنجاح ✅\nالسعر الجديد: <code>{rate}</code>",
         "change_status": "تغيير الحالة",
         "add_notes": "إضافة ملاحظات",
         "select_order_status": "اختر حالة الطلب:",
@@ -315,6 +326,37 @@ TEXTS = {
         "name": "الاسم",
         "not_available": "غير متوفر",
         "no_pending_orders": "لا توجد طلبات قيد الانتظار أو قيد المعالجة ❗️",
+        "select_game_api": "اختر اللعبة للشراء الفوري:",
+        "search_game_hint": "\n\n💡 يمكنك أيضاً كتابة اسم اللعبة للبحث عنها",
+        # Instant Purchase (API)
+        "loading_game_catalog": "جاري تحميل قائمة الحزم...",
+        "select_denomination": "اختر الحزمة:",
+        "no_search_results": "❌ لم يتم العثور على نتائج للبحث",
+        "search_results": "🔍 نتائج البحث:",
+        "enter_player_id": "أدخل معرف اللاعب (Player ID):",
+        "enter_server_id": "أدخل معرف السيرفر (Server ID):",
+        "validating_player_id": "جاري التحقق من معرف اللاعب...",
+        "player_id_valid": "تم التحقق من معرف اللاعب ✅\nالاسم: {player_name}",
+        "player_id_invalid": "معرف اللاعب غير صحيح ❌",
+        "server_not_required": "هذه اللعبة لا تحتاج إلى سيرفر",
+        "confirm_order": "تأكيد الطلب",
+        "order_processing": "جاري معالجة الطلب...",
+        "order_created_success": "تم إنشاء الطلب بنجاح ✅\nرقم الطلب: {order_id}",
+        "order_created_error": "حدث خطأ أثناء إنشاء الطلب ❌\n{error}",
+        "insufficient_balance_api": "رصيدك غير كافٍ ❌\nرصيدك الحالي: {balance}\nالسعر المطلوب: {price}",
+        "product_out_of_stock": "هذا المنتج غير متوفر حالياً ❌\nنعتذر عن الإزعاج",
+        "no_games_available": "لا توجد ألعاب متاحة حالياً ❗️",
+        "no_denominations_available": "لا توجد حزم متاحة لهذه اللعبة ❗️",
+        "api_error": "حدث خطأ في الاتصال بالخدمة ❌",
+        "order_details": "تفاصيل الطلب:\nاللعبة: {game_name}\nالحزمة: {denomination}\nالسعر: {price}\nمعرف اللاعب: {player_id}",
+        "product_details": "تفاصيل المنتج 📦",
+        "product_details_text": (
+            "<b>تفاصيل المنتج:</b>\n\n"
+            "🎮 <b>اللعبة:</b> {game_name}\n"
+            "📦 <b>الحزمة:</b> {denomination}\n"
+            "💰 <b>السعر:</b> <code>{price}</code>\n\n"
+            "{enter_player_id}"
+        ),
     },
     models.Language.ENGLISH: {
         "user_welcome_msg": "Welcome...",
@@ -420,6 +462,7 @@ TEXTS = {
         "permission_manage_games": "Manage Games",
         "permission_manage_items": "Manage Items",
         "permission_manage_payment_methods": "Manage Payment Methods",
+        "permission_manage_general_settings": "Manage General Settings",
         "toggle_permission": "Toggle Permission",
         "all_permissions": "All Permissions",
         "no_permissions_selected": "No permissions selected",
@@ -610,12 +653,22 @@ TEXTS = {
         "order_status_refunded": "Refunded",
         "order_status_failed": "Failed",
         "insufficient_balance": "Insufficient balance ❌\nYour current balance: {balance}\nRequired price: {price}",
+        "insufficient_balance_charge": "Insufficient balance ❌\nYour current balance: {balance} SDG\nRequired price: {price} SDG\n\nPlease charge your balance first 💰",
         "item_not_found": "Item not found or inactive ❌",
         "order_not_found": "Order not found ❌",
         "admin_notes": "Admin Notes",
         "select_order": "Select an order to view:",
         "orders_settings": "Orders Management 📋",
         "orders_settings_title": "Orders Management 📋",
+        # General Settings
+        "general_settings_title": "General Settings ⚙️",
+        "current_usd_to_sudan_rate": "Current Exchange Rate: <code>{rate}</code>",
+        "enter_usd_to_sudan_rate": (
+            "Enter USD to Sudan Currency exchange rate:\n"
+            "Current rate: <code>{current_rate}</code>"
+        ),
+        "invalid_rate": "Invalid rate ❌\nMust be a positive number",
+        "rate_updated_success": "Exchange rate updated successfully ✅\nNew rate: <code>{rate}</code>",
         "change_status": "Change Status",
         "add_notes": "Add Notes",
         "select_order_status": "Select order status:",
@@ -639,6 +692,37 @@ TEXTS = {
         "order_status_updated": "Order status updated ✅",
         "user": "User",
         "no_pending_orders": "No pending or processing orders found ❗️",
+        "select_game_api": "Select game for instant purchase:",
+        "search_game_hint": "\n\n💡 You can also type the game name to search",
+        # Instant Purchase (API)
+        "loading_game_catalog": "Loading catalog...",
+        "select_denomination": "Select denomination:",
+        "no_search_results": "❌ No results found",
+        "search_results": "🔍 Search results:",
+        "enter_player_id": "Enter Player ID:",
+        "enter_server_id": "Enter Server ID:",
+        "validating_player_id": "Validating player ID...",
+        "player_id_valid": "Player ID validated ✅\nName: {player_name}",
+        "player_id_invalid": "Invalid player ID ❌",
+        "server_not_required": "This game does not require a server",
+        "confirm_order": "Confirm Order",
+        "order_processing": "Processing order...",
+        "order_created_success": "Order created successfully ✅\nOrder ID: {order_id}",
+        "order_created_error": "Error creating order ❌\n{error}",
+        "insufficient_balance_api": "Insufficient balance ❌\nYour balance: {balance}\nRequired price: {price}",
+        "product_out_of_stock": "This product is currently out of stock ❌\nWe apologize for the inconvenience",
+        "no_games_available": "No games available at the moment ❗️",
+        "no_denominations_available": "No denominations available for this game ❗️",
+        "api_error": "Error connecting to service ❌",
+        "order_details": "Order Details:\nGame: {game_name}\nDenomination: {denomination}\nPrice: {price}\nPlayer ID: {player_id}",
+        "product_details": "Product Details 📦",
+        "product_details_text": (
+            "<b>Product Details:</b>\n\n"
+            "🎮 <b>Game:</b> {game_name}\n"
+            "📦 <b>Denomination:</b> {denomination}\n"
+            "💰 <b>Price:</b> <code>{price}</code>\n\n"
+            "{enter_player_id}"
+        ),
     },
 }
 
@@ -648,6 +732,7 @@ BUTTONS = {
         "bot_channel": "قناة البوت 📢",
         "bot_chat": "محادثة البوت 💬",
         "back_button": "الرجوع 🔙",
+        "next_button": "التالي",
         "settings": "الإعدادات ⚙️",
         "lang": "اللغة 🌐",
         "back_to_home_page": "العودة إلى القائمة الرئيسية 🔙",
@@ -693,9 +778,13 @@ BUTTONS = {
         "permission_manage_items": "إدارة العناصر",
         "permission_manage_payment_methods": "إدارة طرق الدفع",
         "permission_manage_orders": "إدارة الطلبات",
+        "permission_manage_general_settings": "إدارة الإعدادات العامة",
         "manage_users_settings": "إدارة المستخدمين 👥",
         "orders_settings": "إدارة الطلبات 📋",
         "orders_settings_title": "إدارة الطلبات 📋",
+        # General Settings
+        "general_settings": "الإعدادات العامة ⚙️",
+        "usd_to_sudan_rate": "سعر صرف الدولار إلى العملة السودانية",
         "change_status": "تغيير الحالة",
         "add_notes": "إضافة ملاحظات",
         "select_order_status": "اختر حالة الطلب:",
@@ -740,6 +829,7 @@ BUTTONS = {
         "payment_type_other": "أخرى",
         # User Buttons
         "purchase_order": "طلب شراء 🛒",
+        "instant_purchase": "شراء فوري ⚡",
         "profile": "الملف الشخصي 👤",
         "charge_balance": "شحن الرصيد 💰",
         "my_orders": "طلباتي 📋",
@@ -756,6 +846,7 @@ BUTTONS = {
         "bot_channel": "Bot's Channel 📢",
         "bot_chat": "Bot's Chat 💬",
         "back_button": "Back 🔙",
+        "next_button": "Next",
         "settings": "Settings ⚙️",
         "lang": "Language 🌐",
         "back_to_home_page": "Back to home page 🔙",
@@ -800,7 +891,11 @@ BUTTONS = {
         "permission_manage_games": "Manage Games",
         "permission_manage_items": "Manage Items",
         "permission_manage_payment_methods": "Manage Payment Methods",
+        "permission_manage_general_settings": "Manage General Settings",
         "manage_users_settings": "Manage Users 👥",
+        # General Settings
+        "general_settings": "General Settings ⚙️",
+        "usd_to_sudan_rate": "USD to Sudan Currency Exchange Rate",
         "export_users_to_excel": "Export Users to Excel 📊",
         "games_settings": "Games Settings 🎮",
         "items_settings": "Items Settings 🎯",
@@ -837,6 +932,7 @@ BUTTONS = {
         "payment_type_other": "Other",
         # User Buttons
         "purchase_order": "Purchase Order 🛒",
+        "instant_purchase": "Instant Purchase ⚡",
         "profile": "Profile 👤",
         "charge_balance": "Charge Balance 💰",
         "my_orders": "My Orders 📋",

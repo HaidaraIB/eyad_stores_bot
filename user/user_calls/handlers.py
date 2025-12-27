@@ -214,7 +214,6 @@ async def get_purchase_order_account_id(
                         await context.bot.send_message(
                             chat_id=admin_id,
                             text=notification_text,
-                            parse_mode="HTML",
                         )
                     except:
                         continue

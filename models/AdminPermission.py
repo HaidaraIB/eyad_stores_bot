@@ -14,6 +14,7 @@ class Permission(Enum):
     MANAGE_ITEMS = "manage_items"
     MANAGE_PAYMENT_METHODS = "manage_payment_methods"
     MANAGE_ORDERS = "manage_orders"
+    MANAGE_GENERAL_SETTINGS = "manage_general_settings"
 
 
 class AdminPermission(Base):

@@ -10,6 +10,7 @@ from common.force_join import check_joined_handler
 
 from user.user_calls import *
 from user.user_settings import *
+from user.api_purchase import *
 
 from admin.admin_calls import *
 from admin.admin_settings import *
@@ -21,6 +22,7 @@ from admin.games_settings import *
 from admin.items_settings import *
 from admin.payment_methods_settings import *
 from admin.orders_settings import *
+from admin.general_settings import *
 
 from models import init_db
 
@@ -47,6 +49,7 @@ def setup_and_run():
     app.add_handler(view_charging_balance_order_handler)
     app.add_handler(view_purchase_order_handler)
     app.add_handler(purchase_order_handler)
+    app.add_handler(instant_purchase_handler)
     app.add_handler(charge_balance_handler)
 
     # ADMIN SETTINGS
@@ -93,6 +96,10 @@ def setup_and_run():
     app.add_handler(back_to_admin_purchase_orders_handler)
     app.add_handler(request_charging_order_handler)
     app.add_handler(request_purchase_order_handler)
+
+    # GENERAL SETTINGS
+    app.add_handler(general_settings_handler)
+    app.add_handler(set_usd_to_sudan_rate_handler)
 
     # MANAGE USERS SETTINGS
     app.add_handler(manage_users_settings_handler)
