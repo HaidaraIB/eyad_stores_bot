@@ -50,6 +50,22 @@ def build_admin_keyboard(
             ],
             [
                 InlineKeyboardButton(
+                    text=BUTTONS[lang]["games_settings"],
+                    callback_data="games_settings",
+                ),
+                InlineKeyboardButton(
+                    text=BUTTONS[lang]["items_settings"],
+                    callback_data="items_settings",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text=BUTTONS[lang]["payment_methods_settings"],
+                    callback_data="payment_methods_settings",
+                )
+            ],
+            [
+                InlineKeyboardButton(
                     text=BUTTONS[lang]["ban_unban"],
                     callback_data="ban_unban",
                 )
@@ -119,6 +135,36 @@ def build_admin_keyboard(
                 ]
             )
 
+        if HasPermission.check(
+            user_id, models.Permission.MANAGE_GAMES
+        ) or HasPermission.check(user_id, models.Permission.MANAGE_ITEMS):
+            row = []
+            if HasPermission.check(user_id, models.Permission.MANAGE_GAMES):
+                row.append(
+                    InlineKeyboardButton(
+                        text=BUTTONS[lang]["games_settings"],
+                        callback_data="games_settings",
+                    )
+                )
+            if HasPermission.check(user_id, models.Permission.MANAGE_ITEMS):
+                row.append(
+                    InlineKeyboardButton(
+                        text=BUTTONS[lang]["items_settings"],
+                        callback_data="items_settings",
+                    )
+                )
+            keyboard.append(row)
+
+        if HasPermission.check(user_id, models.Permission.MANAGE_PAYMENT_METHODS):
+            keyboard.append(
+                [
+                    InlineKeyboardButton(
+                        text=BUTTONS[lang]["payment_methods_settings"],
+                        callback_data="payment_methods_settings",
+                    )
+                ]
+            )
+
     return InlineKeyboardMarkup(keyboard)
 
 
@@ -140,6 +186,15 @@ def build_back_button(data: str, lang: models.Language = models.Language.ARABIC)
     return [
         InlineKeyboardButton(
             text=BUTTONS[lang]["back_button"],
+            callback_data=data,
+        ),
+    ]
+
+
+def build_skip_button(data: str, lang: models.Language = models.Language.ARABIC):
+    return [
+        InlineKeyboardButton(
+            text=BUTTONS[lang]["skip_button"],
             callback_data=data,
         ),
     ]

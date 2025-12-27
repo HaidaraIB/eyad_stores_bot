@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 from models.DB import Base
+from sqlalchemy.orm import relationship
 from models.Language import Language
 from datetime import datetime
 
@@ -17,6 +18,10 @@ class User(Base):
 
     created_at = sa.Column(sa.DateTime, default=datetime.now)
     updated_at = sa.Column(sa.DateTime, default=datetime.now, onupdate=datetime.now)
+
+    charging_balance_orders = relationship("ChargingBalanceOrder", back_populates="user")
+    purchase_orders = relationship("PurchaseOrder", back_populates="user")
+    
 
     def __str__(self):
         return (

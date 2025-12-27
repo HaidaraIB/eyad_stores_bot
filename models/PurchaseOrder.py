@@ -1,6 +1,7 @@
 from enum import Enum
 import sqlalchemy as sa
 from models.DB import Base
+from sqlalchemy.orm import relationship
 from datetime import datetime
 
 
@@ -22,40 +23,26 @@ class PurchaseOrder(Base):
         sa.ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False,
     )
-    game_id = sa.Column(
-        sa.Integer,
-        sa.ForeignKey("games.id", ondelete="SET NULL"),
-        nullable=True,
-    )
     item_id = sa.Column(
         sa.Integer,
         sa.ForeignKey("items.id", ondelete="SET NULL"),
         nullable=True,
     )
-    payment_method_id = sa.Column(
-        sa.Integer,
-        sa.ForeignKey("payment_methods.id", ondelete="SET NULL"),
-        nullable=True,
-    )
     game_account_id = sa.Column(
         sa.String, nullable=False
     )  # User's game account ID/username
-    amount = sa.Column(sa.Numeric(10, 2), nullable=False)  # Price of the purchase (stored for historical records)
     status = sa.Column(
         sa.Enum(PurchaseOrderStatus),
         default=PurchaseOrderStatus.PENDING,
         nullable=False,
     )
-    payment_proof = sa.Column(
-        sa.String, nullable=True
-    )  # File ID or URL for payment proof
-    delivery_proof = sa.Column(
-        sa.String, nullable=True
-    )  # File ID or URL for delivery proof
     admin_notes = sa.Column(sa.Text, nullable=True)  # Admin notes about the order
-    
+
     created_at = sa.Column(sa.DateTime, default=datetime.now)
     updated_at = sa.Column(sa.DateTime, default=datetime.now, onupdate=datetime.now)
+
+    user = relationship("User", back_populates="purchase_orders")
+    item = relationship("Item", back_populates="purchase_orders")
 
     def __repr__(self):
         return (

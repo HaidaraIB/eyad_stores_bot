@@ -17,6 +17,9 @@ from admin.broadcast import *
 from admin.ban import *
 from admin.force_join_chats_settings import *
 from admin.manage_users_settings import *
+from admin.games_settings import *
+from admin.items_settings import *
+from admin.payment_methods_settings import *
 
 from models import init_db
 
@@ -38,7 +41,30 @@ def setup_and_run():
     app.add_handler(remove_admin_handler)
     app.add_handler(edit_admin_permissions_handler)
     app.add_handler(admin_settings_handler)
-    
+
+    # GAMES SETTINGS
+    app.add_handler(add_game_handler)
+    app.add_handler(remove_game_handler)
+    app.add_handler(edit_game_handler)
+    app.add_handler(games_settings_handler)
+
+    # ITEMS SETTINGS
+    app.add_handler(add_item_handler)
+    app.add_handler(remove_item_handler)
+    app.add_handler(edit_item_handler)
+    app.add_handler(items_settings_handler)
+
+    # PAYMENT METHODS SETTINGS
+    app.add_handler(add_payment_method_handler)
+    app.add_handler(edit_payment_method_handler)
+    app.add_handler(remove_payment_method_handler)
+    app.add_handler(payment_methods_settings_handler)
+
+    # PAYMENT MEHTODS ADDRESSES SETTINGS
+    app.add_handler(add_payment_address_handler)
+    app.add_handler(remove_payment_address_handler)
+    app.add_handler(manage_payment_addresses_handler)
+
     # MANAGE USERS SETTINGS
     app.add_handler(manage_users_settings_handler)
     app.add_handler(export_users_handler)

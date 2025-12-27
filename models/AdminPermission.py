@@ -10,6 +10,9 @@ class Permission(Enum):
     MANAGE_FORCE_JOIN = "manage_force_join"
     VIEW_IDS = "view_ids"
     MANAGE_USERS = "manage_users"
+    MANAGE_GAMES = "manage_games"
+    MANAGE_ITEMS = "manage_items"
+    MANAGE_PAYMENT_METHODS = "manage_payment_methods"
 
 
 class AdminPermission(Base):
