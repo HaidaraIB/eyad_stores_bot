@@ -22,14 +22,16 @@ from common.keyboards import (
 )
 from common.back_to_home_page import back_to_admin_home_page_handler
 from common.lang_dicts import TEXTS, BUTTONS, get_lang
-from start import admin_command
+from start import admin_command, start_command
 import models
 
 USER, CONFIRM = range(2)
 
 
 async def ban_unban(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if PrivateChatAndAdmin().filter(update) and PermissionFilter(models.Permission.BAN_USERS).filter(update):
+    if PrivateChatAndAdmin().filter(update) and PermissionFilter(
+        models.Permission.BAN_USERS
+    ).filter(update):
         lang = get_lang(update.effective_user.id)
         await update.callback_query.delete_message()
         await context.bot.send_message(
@@ -53,7 +55,9 @@ async def ban_unban(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def get_user_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if PrivateChatAndAdmin().filter(update) and PermissionFilter(models.Permission.BAN_USERS).filter(update):
+    if PrivateChatAndAdmin().filter(update) and PermissionFilter(
+        models.Permission.BAN_USERS
+    ).filter(update):
         lang = get_lang(update.effective_user.id)
         if update.effective_message.users_shared:
             user_id = update.effective_message.users_shared.users[0].user_id
@@ -115,7 +119,9 @@ async def get_user_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def confirm_ban_unban(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if PrivateChatAndAdmin().filter(update) and PermissionFilter(models.Permission.BAN_USERS).filter(update):
+    if PrivateChatAndAdmin().filter(update) and PermissionFilter(
+        models.Permission.BAN_USERS
+    ).filter(update):
         lang = get_lang(update.effective_user.id)
         user_id = context.user_data["user_id_to_ban_unban"]
         with models.session_scope() as s:
@@ -155,6 +161,7 @@ ban_unban_user_handler = ConversationHandler(
     },
     fallbacks=[
         admin_command,
+        start_command,
         back_to_admin_home_page_handler,
     ],
 )

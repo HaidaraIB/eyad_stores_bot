@@ -25,7 +25,7 @@ from common.keyboards import (
 )
 from common.lang_dicts import TEXTS, get_lang
 from custom_filters import PrivateChatAndAdmin, PermissionFilter
-from start import admin_command
+from start import admin_command, start_command
 import models
 
 # Conversation states
@@ -370,6 +370,7 @@ add_item_handler = ConversationHandler(
     fallbacks=[
         items_settings_handler,
         admin_command,
+        start_command,
         back_to_admin_home_page_handler,
         CallbackQueryHandler(back_to_get_item_game, r"^back_to_get_item_game$"),
         CallbackQueryHandler(back_to_get_item_name, r"^back_to_get_item_name$"),
@@ -503,6 +504,7 @@ remove_item_handler = ConversationHandler(
     fallbacks=[
         items_settings_handler,
         admin_command,
+        start_command,
         back_to_admin_home_page_handler,
         CallbackQueryHandler(
             back_to_choose_game_to_remove_item,
@@ -875,6 +877,7 @@ edit_item_handler = ConversationHandler(
     fallbacks=[
         items_settings_handler,
         admin_command,
+        start_command,
         back_to_admin_home_page_handler,
         CallbackQueryHandler(
             back_to_choose_game_to_edit_item,

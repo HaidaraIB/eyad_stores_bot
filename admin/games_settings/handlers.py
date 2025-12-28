@@ -25,7 +25,7 @@ from common.keyboards import (
 )
 from common.lang_dicts import TEXTS, BUTTONS, get_lang
 from custom_filters import PrivateChatAndAdmin, PermissionFilter
-from start import admin_command
+from start import admin_command, start_command
 import models
 
 # Conversation states
@@ -234,6 +234,7 @@ add_game_handler = ConversationHandler(
     fallbacks=[
         games_settings_handler,
         admin_command,
+        start_command,
         back_to_admin_home_page_handler,
         CallbackQueryHandler(back_to_get_game_code, r"^back_to_get_game_code$"),
         CallbackQueryHandler(back_to_get_game_name, r"^back_to_get_game_name$"),
@@ -312,6 +313,7 @@ remove_game_handler = ConversationHandler(
     fallbacks=[
         games_settings_handler,
         admin_command,
+        start_command,
         back_to_admin_home_page_handler,
     ],
 )
@@ -374,7 +376,7 @@ async def show_game_edit_options(update: Update, context: ContextTypes.DEFAULT_T
 
         with models.session_scope() as s:
             game = s.get(models.Game, game_id)
-            
+
             text = game.stringify(lang)
             text += f"\n\n{TEXTS[lang]['select_what_to_edit']}"
 
@@ -560,6 +562,7 @@ edit_game_handler = ConversationHandler(
     fallbacks=[
         games_settings_handler,
         admin_command,
+        start_command,
         back_to_admin_home_page_handler,
         CallbackQueryHandler(
             back_to_choose_game_to_edit,

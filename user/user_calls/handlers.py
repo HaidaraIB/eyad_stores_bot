@@ -1,16 +1,10 @@
-from telegram import (
-    Update,
-    InlineKeyboardMarkup,
-)
+from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import (
     ContextTypes,
     ConversationHandler,
     CallbackQueryHandler,
     MessageHandler,
     filters,
-)
-from user.user_calls.keyboards import (
-    build_purchase_order_keyboard,
 )
 from common.keyboards import (
     build_user_keyboard,
@@ -22,7 +16,7 @@ from common.lang_dicts import TEXTS, get_lang
 from common.back_to_home_page import back_to_user_home_page_handler
 from common.common import escape_html, format_float
 from custom_filters import PrivateChat
-from start import start_command
+from start import start_command, admin_command
 from Config import Config
 import models
 
@@ -178,9 +172,7 @@ async def get_purchase_order_account_id(
             user.balance -= item.price
 
             await update.message.reply_text(
-                text=TEXTS[lang]["purchase_order_submitted"].format(
-                    order_id=order_id
-                ),
+                text=TEXTS[lang]["purchase_order_submitted"].format(order_id=order_id),
             )
 
             # Notify all admins with MANAGE_ORDERS permission
@@ -191,23 +183,32 @@ async def get_purchase_order_account_id(
                 notification_text += f"Item: {escape_html(item.name)}\n"
                 notification_text += f"Game: {escape_html(item.game.name)}\n"
                 notification_text += f"Price: <code>{format_float(item.price)}</code>\n"
-                notification_text += f"Game Account ID: <code>{escape_html(game_account_id)}</code>\n"
-                notification_text += f"Status: {TEXTS[models.Language.ENGLISH]['order_status_pending']}"
-                
+                notification_text += (
+                    f"Game Account ID: <code>{escape_html(game_account_id)}</code>\n"
+                )
+                notification_text += (
+                    f"Status: {TEXTS[models.Language.ENGLISH]['order_status_pending']}"
+                )
+
                 # Get all admins with MANAGE_ORDERS permission (including owner)
                 with models.session_scope() as s:
                     # Get owner
                     admin_ids = [Config.OWNER_ID]
-                    
+
                     # Get all admins with MANAGE_ORDERS permission
-                    permissions = s.query(models.AdminPermission).filter(
-                        models.AdminPermission.permission == models.Permission.MANAGE_ORDERS
-                    ).all()
-                    
+                    permissions = (
+                        s.query(models.AdminPermission)
+                        .filter(
+                            models.AdminPermission.permission
+                            == models.Permission.MANAGE_ORDERS
+                        )
+                        .all()
+                    )
+
                     for perm in permissions:
                         if perm.admin_id not in admin_ids:
                             admin_ids.append(perm.admin_id)
-                
+
                 # Send notification to all admins
                 for admin_id in admin_ids:
                     try:
@@ -260,6 +261,7 @@ purchase_order_handler = ConversationHandler(
     },
     fallbacks=[
         start_command,
+        admin_command,
         back_to_user_home_page_handler,
         CallbackQueryHandler(
             back_to_purchase_order_game, r"^back_to_purchase_order_game$"

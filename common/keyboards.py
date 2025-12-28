@@ -72,6 +72,14 @@ def build_admin_keyboard(
             ],
             [
                 InlineKeyboardButton(
+                    text=BUTTONS[lang].get(
+                        "filter_api_games_settings", "Filter API Games 🔍"
+                    ),
+                    callback_data="filter_api_games_settings",
+                )
+            ],
+            [
+                InlineKeyboardButton(
                     text=BUTTONS[lang]["payment_methods_settings"],
                     callback_data="payment_methods_settings",
                 )
@@ -207,6 +215,18 @@ def build_admin_keyboard(
                             "general_settings", "General Settings ⚙️"
                         ),
                         callback_data="general_settings",
+                    )
+                ]
+            )
+
+        if HasPermission.check(user_id, models.Permission.FILTER_API_GAMES):
+            keyboard.append(
+                [
+                    InlineKeyboardButton(
+                        text=BUTTONS[lang].get(
+                            "filter_api_games_settings", "Filter API Games 🔍"
+                        ),
+                        callback_data="filter_api_games_settings",
                     )
                 ]
             )

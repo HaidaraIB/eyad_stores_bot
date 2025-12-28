@@ -28,7 +28,7 @@ from common.keyboards import (
 )
 from common.lang_dicts import TEXTS, BUTTONS, get_lang
 from custom_filters import PrivateChatAndOwner
-from start import admin_command
+from start import admin_command, start_command
 from Config import Config
 import models
 
@@ -335,6 +335,7 @@ remove_admin_handler = ConversationHandler(
     fallbacks=[
         admin_settings_handler,
         admin_command,
+        start_command,
         back_to_admin_home_page_handler,
     ],
 )
@@ -540,6 +541,7 @@ edit_admin_permissions_handler = ConversationHandler(
     fallbacks=[
         admin_settings_handler,
         admin_command,
+        start_command,
         back_to_admin_home_page_handler,
         CallbackQueryHandler(
             callback=back_to_choose_admin_permissions,

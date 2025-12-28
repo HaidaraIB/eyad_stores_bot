@@ -28,7 +28,7 @@ from common.keyboards import (
 from common.lang_dicts import TEXTS, BUTTONS, get_lang
 from common.common import escape_html
 from custom_filters import PrivateChatAndAdmin, PermissionFilter
-from start import admin_command
+from start import admin_command, start_command
 import models
 
 # Conversation states for PaymentMethod
@@ -225,6 +225,7 @@ add_payment_method_handler = ConversationHandler(
     fallbacks=[
         payment_methods_settings_handler,
         admin_command,
+        start_command,
         back_to_admin_home_page_handler,
         CallbackQueryHandler(back_to_get_pm_name, r"^back_to_get_pm_name$"),
         CallbackQueryHandler(back_to_get_pm_type, r"^back_to_get_pm_type$"),
@@ -305,6 +306,7 @@ remove_payment_method_handler = ConversationHandler(
     fallbacks=[
         payment_methods_settings_handler,
         admin_command,
+        start_command,
         back_to_admin_home_page_handler,
     ],
 )
@@ -549,6 +551,7 @@ edit_payment_method_handler = ConversationHandler(
     fallbacks=[
         payment_methods_settings_handler,
         admin_command,
+        start_command,
         back_to_admin_home_page_handler,
         CallbackQueryHandler(
             back_to_choose_pm_to_edit,
@@ -665,6 +668,7 @@ manage_payment_addresses_handler = ConversationHandler(
     fallbacks=[
         payment_methods_settings_handler,
         admin_command,
+        start_command,
         back_to_admin_home_page_handler,
     ],
 )
@@ -1018,6 +1022,7 @@ add_payment_address_handler = ConversationHandler(
         payment_methods_settings_handler,
         manage_payment_addresses_handler,
         admin_command,
+        start_command,
         back_to_admin_home_page_handler,
         CallbackQueryHandler(back_to_get_address_label, r"^back_to_get_address_label$"),
         CallbackQueryHandler(back_to_get_address_value, r"^back_to_get_address_value$"),
@@ -1136,6 +1141,7 @@ remove_payment_address_handler = ConversationHandler(
         payment_methods_settings_handler,
         manage_payment_addresses_handler,
         admin_command,
+        start_command,
         back_to_admin_home_page_handler,
         CallbackQueryHandler(
             back_to_manage_payment_addresses,

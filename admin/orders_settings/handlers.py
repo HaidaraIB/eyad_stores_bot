@@ -24,7 +24,7 @@ from common.lang_dicts import TEXTS, get_lang
 from common.back_to_home_page import back_to_admin_home_page_handler
 from common.common import escape_html, format_datetime, format_float
 from custom_filters import PrivateChatAndAdmin, PermissionFilter
-from start import admin_command
+from start import admin_command, start_command
 import models
 
 # Conversation states for adding notes
@@ -61,10 +61,12 @@ async def request_charging_order(update: Update, context: ContextTypes.DEFAULT_T
             order = (
                 s.query(models.ChargingBalanceOrder)
                 .filter(
-                    models.ChargingBalanceOrder.status.in_([
-                        models.ChargingOrderStatus.PENDING,
-                        models.ChargingOrderStatus.PROCESSING,
-                    ])
+                    models.ChargingBalanceOrder.status.in_(
+                        [
+                            models.ChargingOrderStatus.PENDING,
+                            models.ChargingOrderStatus.PROCESSING,
+                        ]
+                    )
                 )
                 .order_by(models.ChargingBalanceOrder.created_at.asc())
                 .first()
@@ -72,7 +74,9 @@ async def request_charging_order(update: Update, context: ContextTypes.DEFAULT_T
 
             if not order:
                 await update.callback_query.answer(
-                    text=TEXTS[lang].get("no_pending_orders", "No pending or processing orders found ❗️"),
+                    text=TEXTS[lang].get(
+                        "no_pending_orders", "No pending or processing orders found ❗️"
+                    ),
                     show_alert=True,
                 )
                 return
@@ -129,10 +133,12 @@ async def request_purchase_order(update: Update, context: ContextTypes.DEFAULT_T
             order = (
                 s.query(models.PurchaseOrder)
                 .filter(
-                    models.PurchaseOrder.status.in_([
-                        models.PurchaseOrderStatus.PENDING,
-                        models.PurchaseOrderStatus.PROCESSING,
-                    ])
+                    models.PurchaseOrder.status.in_(
+                        [
+                            models.PurchaseOrderStatus.PENDING,
+                            models.PurchaseOrderStatus.PROCESSING,
+                        ]
+                    )
                 )
                 .order_by(models.PurchaseOrder.created_at.asc())
                 .first()
@@ -140,7 +146,9 @@ async def request_purchase_order(update: Update, context: ContextTypes.DEFAULT_T
 
             if not order:
                 await update.callback_query.answer(
-                    text=TEXTS[lang].get("no_pending_orders", "No pending or processing orders found ❗️"),
+                    text=TEXTS[lang].get(
+                        "no_pending_orders", "No pending or processing orders found ❗️"
+                    ),
                     show_alert=True,
                 )
                 return
@@ -300,9 +308,14 @@ async def view_charging_balance_order_admin(
         models.Permission.MANAGE_ORDERS
     ).filter(update):
         lang = get_lang(update.effective_user.id)
-        order_id = int(
-            update.callback_query.data.replace("admin_view_charge_order_", "")
-        )
+        if not update.callback_query.data.startswith("back"):
+            order_id = int(
+                update.callback_query.data.replace("admin_view_charge_order_", "")
+            )
+        else:
+            data = update.callback_query.data.replace("back_to_order_", "")
+            _, order_id = data.split("_", 1)
+            order_id = int(order_id)
 
         with models.session_scope() as s:
             order = s.get(models.ChargingBalanceOrder, order_id)
@@ -351,9 +364,14 @@ async def view_purchase_order_admin(update: Update, context: ContextTypes.DEFAUL
         models.Permission.MANAGE_ORDERS
     ).filter(update):
         lang = get_lang(update.effective_user.id)
-        order_id = int(
-            update.callback_query.data.replace("admin_view_purchase_order_", "")
-        )
+        if not update.callback_query.data.startswith("back"):
+            order_id = int(
+                update.callback_query.data.replace("admin_view_purchase_order_", "")
+            )
+        else:
+            data = update.callback_query.data.replace("back_to_order_", "")
+            _, order_id = data.split("_", 1)
+            order_id = int(order_id)
 
         with models.session_scope() as s:
             order = s.get(models.PurchaseOrder, order_id)
@@ -546,20 +564,8 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
 
 
-async def back_to_order_view(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if PrivateChatAndAdmin().filter(update) and PermissionFilter(
-        models.Permission.MANAGE_ORDERS
-    ).filter(update):
-        data = update.callback_query.data.replace("back_to_order_", "")
-        order_type, order_id = data.split("_", 1)
-        order_id = int(order_id)
-
-        if order_type == "charging":
-            update.callback_query.data = f"admin_view_charge_order_{order_id}"
-            return await view_charging_balance_order_admin(update, context)
-        else:
-            update.callback_query.data = f"admin_view_purchase_order_{order_id}"
-            return await view_purchase_order_admin(update, context)
+back_to_charging_order = view_charging_balance_order_admin
+back_to_purchase_order = view_purchase_order_admin
 
 
 update_order_status_handler = CallbackQueryHandler(
@@ -572,9 +578,13 @@ set_order_status_handler = CallbackQueryHandler(
     r"^set_order_status_(charging|purchase)_(pending|processing|completed|failed|cancelled|refunded)$",
 )
 
-back_to_order_view_handler = CallbackQueryHandler(
-    back_to_order_view,
-    r"^back_to_order_(charging|purchase)_\d+$",
+back_to_charging_order_handler = CallbackQueryHandler(
+    back_to_charging_order,
+    r"^back_to_order_charging_\d+$",
+)
+back_to_purchase_order_handler = CallbackQueryHandler(
+    back_to_purchase_order,
+    r"^back_to_order_purchase_\d+$",
 )
 
 
@@ -650,34 +660,18 @@ add_order_notes_handler = ConversationHandler(
     },
     fallbacks=[
         admin_command,
+        start_command,
         back_to_admin_home_page_handler,
-        CallbackQueryHandler(
-            back_to_order_view,
-            r"^back_to_order_(charging|purchase)_\d+$",
-        ),
+        back_to_purchase_order_handler,
+        back_to_charging_order_handler,
     ],
 )
 
 
-# Back handlers
-async def back_to_admin_charging_balance_orders(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-):
-    if PrivateChatAndAdmin().filter(update) and PermissionFilter(
-        models.Permission.MANAGE_ORDERS
-    ).filter(update):
-        update.callback_query.data = "admin_charging_balance_orders"
-        return await show_charging_balance_orders_admin(update, context)
+back_to_admin_charging_balance_orders = show_charging_balance_orders_admin
 
 
-async def back_to_admin_purchase_orders(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-):
-    if PrivateChatAndAdmin().filter(update) and PermissionFilter(
-        models.Permission.MANAGE_ORDERS
-    ).filter(update):
-        update.callback_query.data = "admin_purchase_orders"
-        return await show_purchase_orders_admin(update, context)
+back_to_admin_purchase_orders = show_purchase_orders_admin
 
 
 back_to_admin_charging_balance_orders_handler = CallbackQueryHandler(

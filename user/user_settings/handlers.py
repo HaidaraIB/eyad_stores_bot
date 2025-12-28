@@ -22,7 +22,7 @@ from common.back_to_home_page import back_to_user_home_page_handler
 from common.common import escape_html, format_float
 from custom_filters import PrivateChat
 from Config import Config
-from start import start_command
+from start import start_command, admin_command
 import models
 
 
@@ -429,6 +429,7 @@ charge_balance_handler = ConversationHandler(
     },
     fallbacks=[
         start_command,
+        admin_command,
         back_to_user_home_page_handler,
         CallbackQueryHandler(back_to_charge_balance_pm, r"^back_to_charge_balance_pm$"),
         CallbackQueryHandler(

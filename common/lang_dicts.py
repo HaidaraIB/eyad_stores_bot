@@ -223,7 +223,7 @@ TEXTS = {
         "select_payment_method_to_remove_address": "اختر طريقة الدفع لإزالة عنوان منها:",
         "remove_payment_address_instruction": "اختر العنوان الذي تريد إزالته:\nطريقة الدفع: {pm_name}",
         "no_payment_addresses": "لا توجد عناوين لهذه طريقة الدفع ❗️",
-        "payment_method_paused": "طريقة الدفع <b>{pm_name}</b> متوقفة حالياً ⏸️",
+        "payment_method_paused": "طريقة الدفع {pm_name} متوقفة حالياً ⏸️",
         "payment_address_removed_success": "تمت إزالة عنوان الدفع بنجاح ✅",
         "add_payment_address_instruction_label": "أرسل تسمية العنوان (اختياري، اتركه فارغاً للمتابعة):",
         "add_payment_address_instruction_address": "أرسل عنوان الدفع (مطلوب):",
@@ -361,6 +361,8 @@ TEXTS = {
         ),
         "product_out_of_stock": ("هذا المنتج غير متوفر حالياً ❌\n" "نعتذر عن الإزعاج"),
         "no_games_available": "لا توجد ألعاب متاحة حالياً ❗️",
+        "no_filtered_games_available": "لا توجد ألعاب متاحة. يرجى الاتصال بالمسؤول.",
+        "game_not_available": "هذه اللعبة غير متاحة",
         "no_denominations_available": "لا توجد حزم متاحة لهذه اللعبة ❗️",
         "api_error": "حدث خطأ في الاتصال بالخدمة ❌",
         "order_details": (
@@ -378,6 +380,21 @@ TEXTS = {
             "💰 <b>السعر:</b> <code>{price}</code> SDG\n\n"
             "{enter_player_id}"
         ),
+        # Filter API Games
+        "filter_api_games_settings_title": "إعدادات تصفية ألعاب API 🔍",
+        "select_api_game_to_manage": "اختر لعبة للتحكم:",
+        "api_games_list_info": "🟢 = اللعبة موجودة ونشطة\n🔴 = اللعبة غير موجودة أو غير نشطة",
+        "enter_arabic_name": "أدخل الاسم العربي للعبة:",
+        "arabic_name_saved": "تم حفظ الاسم العربي بنجاح ✅",
+        "api_game_status_updated": "تم تحديث حالة اللعبة بنجاح ✅",
+        "set_arabic_name": "تعيين الاسم العربي",
+        "toggle_api_game_status": "تبديل الحالة",
+        "original_name": "الاسم الأصلي",
+        "arabic_name": "الاسم العربي",
+        "select_filtered_game_to_manage": "اختر لعبة مصفاة للتحكم:",
+        "filtered_games_list_info": "🟢 = نشط\n🔴 = غير نشط",
+        "no_filtered_games": "لا توجد ألعاب مصفاة. يرجى تصفية الألعاب من API أولاً.",
+        "game_not_found": "اللعبة غير موجودة",
     },
     models.Language.ENGLISH: {
         "user_welcome_msg": "Welcome...",
@@ -601,7 +618,7 @@ TEXTS = {
         "select_payment_method_to_remove_address": "Select the payment method to remove an address from:",
         "remove_payment_address_instruction": "Select the address you want to remove:\nPayment Method: {pm_name}",
         "no_payment_addresses": "No addresses for this payment method ❗️",
-        "payment_method_paused": "Payment method <b>{pm_name}</b> is currently paused ⏸️",
+        "payment_method_paused": "Payment method {pm_name} is currently paused ⏸️",
         "payment_address_removed_success": "Payment address removed successfully ✅",
         "add_payment_address_instruction_label": "Send the address label (optional, leave empty to continue):",
         "add_payment_address_instruction_address": "Send the payment address (required):",
@@ -744,6 +761,8 @@ TEXTS = {
         "insufficient_balance_api": "Insufficient balance ❌\nYour balance: {balance}\nRequired price: {price}",
         "product_out_of_stock": "This product is currently out of stock ❌\nWe apologize for the inconvenience",
         "no_games_available": "No games available at the moment ❗️",
+        "no_filtered_games_available": "No games available. Please contact admin.",
+        "game_not_available": "This game is not available",
         "no_denominations_available": "No denominations available for this game ❗️",
         "api_error": "Error connecting to service ❌",
         "order_details": (
@@ -761,6 +780,21 @@ TEXTS = {
             "💰 <b>Price:</b> <code>{price}</code> SDG\n\n"
             "{enter_player_id}"
         ),
+        # Filter API Games
+        "filter_api_games_settings_title": "Filter API Games Settings 🔍",
+        "select_api_game_to_manage": "Select a game to manage:",
+        "api_games_list_info": "🟢 = Game exists and is active\n🔴 = Game doesn't exist or is inactive",
+        "enter_arabic_name": "Enter the Arabic name for this game:",
+        "arabic_name_saved": "Arabic name saved successfully ✅",
+        "api_game_status_updated": "Game status updated successfully ✅",
+        "set_arabic_name": "Set Arabic Name",
+        "toggle_api_game_status": "Toggle Status",
+        "original_name": "Original Name",
+        "arabic_name": "Arabic Name",
+        "select_filtered_game_to_manage": "Select a filtered game to manage:",
+        "filtered_games_list_info": "🟢 = Active\n🔴 = Inactive",
+        "no_filtered_games": "No filtered games found. Please filter games from API first.",
+        "game_not_found": "Game not found",
     },
 }
 
@@ -817,7 +851,11 @@ BUTTONS = {
         "permission_manage_payment_methods": "إدارة طرق الدفع",
         "permission_manage_orders": "إدارة الطلبات",
         "permission_manage_general_settings": "إدارة الإعدادات العامة",
+        "permission_filter_api_games": "تصفية ألعاب API",
         "manage_users_settings": "إدارة المستخدمين 👥",
+        "filter_api_games_settings": "تصفية ألعاب API 🔍",
+        "filter_api_games": "تصفية ألعاب API 🔍",
+        "manage_filtered_games": "إدارة الألعاب المصفاة 📋",
         "orders_settings": "إدارة الطلبات 📋",
         "orders_settings_title": "إدارة الطلبات 📋",
         # General Settings
@@ -930,6 +968,7 @@ BUTTONS = {
         "permission_manage_items": "Manage Items",
         "permission_manage_payment_methods": "Manage Payment Methods",
         "permission_manage_general_settings": "Manage General Settings",
+        "permission_filter_api_games": "Filter API Games",
         "manage_users_settings": "Manage Users 👥",
         # General Settings
         "general_settings": "General Settings ⚙️",
@@ -981,6 +1020,10 @@ BUTTONS = {
         "add_notes": "Add Notes",
         "request_charging_order": "Request Charging Order ⚡",
         "request_purchase_order": "Request Purchase Order ⚡",
+        # Filter API Games
+        "filter_api_games_settings": "Filter API Games 🔍",
+        "filter_api_games": "Filter API Games 🔍",
+        "manage_filtered_games": "Manage Filtered Games 📋",
     },
 }
 

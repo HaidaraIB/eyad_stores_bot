@@ -23,6 +23,7 @@ from admin.items_settings import *
 from admin.payment_methods_settings import *
 from admin.orders_settings import *
 from admin.general_settings import *
+from admin.filter_api_games_settings import *
 
 from models import init_db
 
@@ -90,7 +91,8 @@ def setup_and_run():
     app.add_handler(view_purchase_order_admin_handler)
     app.add_handler(update_order_status_handler)
     app.add_handler(set_order_status_handler)
-    app.add_handler(back_to_order_view_handler)
+    app.add_handler(back_to_charging_order_handler)
+    app.add_handler(back_to_purchase_order_handler)
     app.add_handler(add_order_notes_handler)
     app.add_handler(back_to_admin_charging_balance_orders_handler)
     app.add_handler(back_to_admin_purchase_orders_handler)
@@ -100,6 +102,19 @@ def setup_and_run():
     # GENERAL SETTINGS
     app.add_handler(general_settings_handler)
     app.add_handler(set_usd_to_sudan_rate_handler)
+
+    # FILTER API GAMES SETTINGS
+    app.add_handler(filter_api_games_settings_handler)
+    app.add_handler(filter_api_games_handler)
+    app.add_handler(api_games_pagination_handler)
+    app.add_handler(api_game_details_handler)
+    app.add_handler(toggle_api_game_status_handler)
+    app.add_handler(back_to_api_games_list_handler)
+    app.add_handler(set_arabic_name_handler)
+    app.add_handler(manage_filtered_games_handler)
+    app.add_handler(filtered_games_pagination_handler)
+    app.add_handler(filtered_game_details_handler)
+    app.add_handler(back_to_filtered_games_list_handler)
 
     # MANAGE USERS SETTINGS
     app.add_handler(manage_users_settings_handler)

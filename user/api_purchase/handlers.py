@@ -11,7 +11,7 @@ from common.lang_dicts import TEXTS, get_lang
 from common.back_to_home_page import back_to_user_home_page_handler
 from common.common import escape_html, format_float, get_exchange_rate
 from custom_filters import PrivateChat
-from start import start_command
+from start import start_command, admin_command
 from services.g2bulk_api import G2BulkAPI
 from user.api_purchase.keyboards import (
     build_game_keyboard,
@@ -19,6 +19,7 @@ from user.api_purchase.keyboards import (
     build_server_keyboard,
     build_player_id_keyboard,
     build_search_results_keyboard,
+    filter_active_games,
 )
 import models
 
@@ -37,28 +38,39 @@ async def instant_purchase(update: Update, context: ContextTypes.DEFAULT_TYPE):
         lang = get_lang(update.effective_user.id)
         try:
             api = G2BulkAPI()
-            games = await api.get_games()
+            api_games = await api.get_games()
 
-            if not games:
+            if not api_games:
                 await update.callback_query.answer(
                     text=TEXTS[lang].get("no_games_available", "No games available"),
                     show_alert=True,
                 )
                 return ConversationHandler.END
 
-            # Store games in context for pagination
+            # Filter to only show active filtered games
+            games = filter_active_games(api_games)
+
+            if not games:
+                await update.callback_query.answer(
+                    text=TEXTS[lang].get("no_games_available", "No games available at the moment ❗️"),
+                    show_alert=True,
+                )
+                return ConversationHandler.END
+
+            # Store filtered games in context for pagination
             context.user_data["api_all_games"] = games
             context.user_data["api_games_page"] = 0
 
             search_hint = TEXTS[lang].get(
                 "search_game_hint",
-                "\n\n💡 يمكنك أيضاً كتابة اسم اللعبة للبحث عنها\n💡 You can also type the game name to search"
+                "\n\n💡 يمكنك أيضاً كتابة اسم اللعبة للبحث عنها\n💡 You can also type the game name to search",
             )
-            
+
             await update.callback_query.edit_message_text(
                 text=TEXTS[lang].get(
                     "select_game_api", "Select game for instant purchase:"
-                ) + search_hint,
+                )
+                + search_hint,
                 reply_markup=build_game_keyboard(games, lang, page=0),
             )
             return INSTANT_PURCHASE_GAME
@@ -74,39 +86,46 @@ async def get_instant_purchase_game(update: Update, context: ContextTypes.DEFAUL
     """Handle game selection and show denominations, or pagination"""
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
-        
+
         # Handle search results pagination
         if update.callback_query.data.startswith("api_search_page_"):
             page_str = update.callback_query.data.replace("api_search_page_", "")
             if page_str == "info":
                 await update.callback_query.answer()
                 return INSTANT_PURCHASE_GAME
-            
+
             try:
                 page = int(page_str)
                 search_results = context.user_data.get("api_search_results", [])
-                
+
                 if not search_results:
                     await update.callback_query.answer(
-                        text=TEXTS[lang].get("api_error", "Error connecting to service"),
+                        text=TEXTS[lang].get(
+                            "api_error", "Error connecting to service"
+                        ),
                         show_alert=True,
                     )
                     return INSTANT_PURCHASE_GAME
-                
+
                 from user.api_purchase.keyboards import SEARCH_RESULTS_PER_PAGE
-                total_pages = (len(search_results) + SEARCH_RESULTS_PER_PAGE - 1) // SEARCH_RESULTS_PER_PAGE
+
+                total_pages = (
+                    len(search_results) + SEARCH_RESULTS_PER_PAGE - 1
+                ) // SEARCH_RESULTS_PER_PAGE
                 page = max(0, min(page, total_pages - 1))
                 context.user_data["api_search_page"] = page
-                
+
                 results_count = len(search_results)
                 if lang == models.Language.ARABIC:
                     results_text = f"🔍 تم العثور على {results_count} نتائج:\nاختر اللعبة من القائمة:"
                 else:
                     results_text = f"🔍 Found {results_count} results:\nSelect a game from the list:"
-                
+
                 await update.callback_query.edit_message_text(
                     text=results_text,
-                    reply_markup=build_search_results_keyboard(search_results, lang, page=page),
+                    reply_markup=build_search_results_keyboard(
+                        search_results, lang, page=page
+                    ),
                 )
                 return INSTANT_PURCHASE_GAME
             except (ValueError, IndexError):
@@ -115,7 +134,7 @@ async def get_instant_purchase_game(update: Update, context: ContextTypes.DEFAUL
                     show_alert=True,
                 )
                 return INSTANT_PURCHASE_GAME
-        
+
         # Handle games pagination
         if update.callback_query.data.startswith("api_games_page_"):
             page_str = update.callback_query.data.replace("api_games_page_", "")
@@ -123,30 +142,33 @@ async def get_instant_purchase_game(update: Update, context: ContextTypes.DEFAUL
                 # Just show current page info, don't change page
                 await update.callback_query.answer()
                 return INSTANT_PURCHASE_GAME
-            
+
             try:
                 page = int(page_str)
                 games = context.user_data.get("api_all_games", [])
-                
+
                 if not games:
                     # Reload games if not in context
                     api = G2BulkAPI()
-                    games = await api.get_games()
+                    api_games = await api.get_games()
+                    # Filter to only show active filtered games
+                    games = filter_active_games(api_games)
                     context.user_data["api_all_games"] = games
-                
+
                 total_pages = (len(games) + 6 - 1) // 6  # GAMES_PER_PAGE = 6
                 page = max(0, min(page, total_pages - 1))  # Clamp page number
                 context.user_data["api_games_page"] = page
-                
+
                 search_hint = TEXTS[lang].get(
                     "search_game_hint",
-                    "\n\n💡 يمكنك أيضاً كتابة اسم اللعبة للبحث عنها\n💡 You can also type the game name to search"
+                    "\n\n💡 يمكنك أيضاً كتابة اسم اللعبة للبحث عنها\n💡 You can also type the game name to search",
                 )
-                
+
                 await update.callback_query.edit_message_text(
                     text=TEXTS[lang].get(
                         "select_game_api", "Select game for instant purchase:"
-                    ) + search_hint,
+                    )
+                    + search_hint,
                     reply_markup=build_game_keyboard(games, lang, page=page),
                 )
                 return INSTANT_PURCHASE_GAME
@@ -160,6 +182,25 @@ async def get_instant_purchase_game(update: Update, context: ContextTypes.DEFAUL
         # Handle game selection
         if not update.callback_query.data.startswith("back"):
             game_code = update.callback_query.data.replace("api_game_", "")
+            # Validate that the game is an active filtered game
+            with models.session_scope() as s:
+                api_game = (
+                    s.query(models.ApiGame)
+                    .filter(
+                        models.ApiGame.api_game_code == game_code,
+                        models.ApiGame.is_active == True
+                    )
+                    .first()
+                )
+                if not api_game:
+                    await update.callback_query.answer(
+                        text=TEXTS[lang].get(
+                            "game_not_available",
+                            "This game is not available"
+                        ),
+                        show_alert=True,
+                    )
+                    return INSTANT_PURCHASE_GAME
             context.user_data["api_game_code"] = game_code
         else:
             game_code = context.user_data.get("api_game_code")
@@ -184,8 +225,25 @@ async def get_instant_purchase_game(update: Update, context: ContextTypes.DEFAUL
                 )
                 return INSTANT_PURCHASE_GAME
 
+            # Get display name using ApiGame if available
+            lang = get_lang(update.effective_user.id)
+            default_name = game_info.get("name", game_code)
+            with models.session_scope() as s:
+                api_game = (
+                    s.query(models.ApiGame)
+                    .filter(
+                        models.ApiGame.api_game_code == game_code,
+                        models.ApiGame.is_active == True
+                    )
+                    .first()
+                )
+                if api_game:
+                    display_name = api_game.get_display_name(lang)
+                else:
+                    display_name = default_name
+            
             # Store game info in context
-            context.user_data["api_game_name"] = game_info.get("name", game_code)
+            context.user_data["api_game_name"] = display_name
             context.user_data["api_catalogues"] = catalogues
             context.user_data["api_denoms_page"] = 0
 
@@ -202,21 +260,43 @@ async def get_instant_purchase_game(update: Update, context: ContextTypes.DEFAUL
             return INSTANT_PURCHASE_GAME
 
 
-def search_games(games: list, query: str) -> list:
-    """Search games by name (case-insensitive, partial match)"""
+def search_games(games: list, query: str, lang: models.Language = None) -> list:
+    """Search games by name (case-insensitive, partial match)
+    Searches in original name, code, and Arabic name if available"""
     query_lower = query.lower().strip()
     if not query_lower:
         return []
-    
+
+    # Get all active filtered games with their Arabic names for search
+    api_games_dict = {}
+    if lang:
+        with models.session_scope() as s:
+            api_games_dict = {
+                game.api_game_code: game
+                for game in s.query(models.ApiGame)
+                .filter(models.ApiGame.is_active == True)
+                .all()
+            }
+
     results = []
     for game in games:
         game_name = game.get("name", "").lower()
         game_code = game.get("code", "").lower()
         
-        # Check if query matches game name or code
-        if query_lower in game_name or query_lower in game_code:
+        # Check if query matches original game name or code
+        matches = query_lower in game_name or query_lower in game_code
+        
+        # Also check Arabic name if available
+        if not matches and lang and game_code in api_games_dict:
+            api_game = api_games_dict[game_code]
+            if api_game.arabic_name:
+                arabic_name_lower = api_game.arabic_name.lower()
+                if query_lower in arabic_name_lower:
+                    matches = True
+
+        if matches:
             results.append(game)
-    
+
     return results
 
 
@@ -225,49 +305,71 @@ async def handle_game_search(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
         search_query = update.message.text.strip()
-        
+
         # Get games from context or reload
         games = context.user_data.get("api_all_games", [])
         if not games:
             try:
                 api = G2BulkAPI()
-                games = await api.get_games()
+                api_games = await api.get_games()
+                # Filter to only show active filtered games
+                games = filter_active_games(api_games)
                 context.user_data["api_all_games"] = games
             except Exception:
                 await update.message.reply_text(
                     text=TEXTS[lang].get("api_error", "Error connecting to service"),
                 )
                 return INSTANT_PURCHASE_GAME
-        
-        # Search for games
-        search_results = search_games(games, search_query)
-        
+
+        # Search for games (already filtered)
+        search_results = search_games(games, search_query, lang)
+
         if not search_results:
             # No results found
             if lang == models.Language.ARABIC:
                 no_results_text = f"❌ لم يتم العثور على نتائج للبحث: '{search_query}'\n\n💡 جرب البحث مرة أخرى أو اختر من القائمة"
             else:
                 no_results_text = f"❌ No results found for: '{search_query}'\n\n💡 Try searching again or select from the list"
-            
+
             await update.message.reply_text(
                 text=no_results_text,
             )
             return INSTANT_PURCHASE_GAME
-        
+
         if len(search_results) == 1:
             # Single result - proceed directly
             game = search_results[0]
             game_code = game.get("code")
-            context.user_data["api_game_code"] = game_code
             
+            # Validate that the game is an active filtered game
+            with models.session_scope() as s:
+                api_game = (
+                    s.query(models.ApiGame)
+                    .filter(
+                        models.ApiGame.api_game_code == game_code,
+                        models.ApiGame.is_active == True
+                    )
+                    .first()
+                )
+                if not api_game:
+                    await update.message.reply_text(
+                        text=TEXTS[lang].get(
+                            "game_not_available",
+                            "This game is not available"
+                        ),
+                    )
+                    return INSTANT_PURCHASE_GAME
+            
+            context.user_data["api_game_code"] = game_code
+
             try:
                 api = G2BulkAPI()
-                
+
                 # Get game info and catalogue
                 catalogue_data = await api.get_game_catalogue(game_code)
                 game_info = catalogue_data.get("game", {})
                 catalogues = catalogue_data.get("catalogues", [])
-                
+
                 if not catalogues:
                     await update.message.reply_text(
                         text=TEXTS[lang].get(
@@ -275,12 +377,12 @@ async def handle_game_search(update: Update, context: ContextTypes.DEFAULT_TYPE)
                         ),
                     )
                     return INSTANT_PURCHASE_GAME
-                
+
                 # Store game info in context
                 context.user_data["api_game_name"] = game_info.get("name", game_code)
                 context.user_data["api_catalogues"] = catalogues
                 context.user_data["api_denoms_page"] = 0
-                
+
                 await update.message.reply_text(
                     text=TEXTS[lang].get("select_denomination", "Select denomination:"),
                     reply_markup=build_denomination_keyboard(catalogues, lang, page=0),
@@ -296,15 +398,21 @@ async def handle_game_search(update: Update, context: ContextTypes.DEFAULT_TYPE)
             results_count = len(search_results)
             context.user_data["api_search_results"] = search_results
             context.user_data["api_search_page"] = 0
-            
+
             if lang == models.Language.ARABIC:
-                results_text = f"🔍 تم العثور على {results_count} نتائج:\nاختر اللعبة من القائمة:"
+                results_text = (
+                    f"🔍 تم العثور على {results_count} نتائج:\nاختر اللعبة من القائمة:"
+                )
             else:
-                results_text = f"🔍 Found {results_count} results:\nSelect a game from the list:"
-            
+                results_text = (
+                    f"🔍 Found {results_count} results:\nSelect a game from the list:"
+                )
+
             await update.message.reply_text(
                 text=results_text,
-                reply_markup=build_search_results_keyboard(search_results, lang, page=0),
+                reply_markup=build_search_results_keyboard(
+                    search_results, lang, page=0
+                ),
             )
             return INSTANT_PURCHASE_GAME
 
@@ -314,7 +422,7 @@ async def back_to_api_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
         games = context.user_data.get("api_all_games", [])
-        
+
         if not games:
             # Reload games if not in context
             try:
@@ -323,18 +431,17 @@ async def back_to_api_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 context.user_data["api_all_games"] = games
             except Exception:
                 return await instant_purchase(update, context)
-        
+
         context.user_data["api_games_page"] = 0
-        
+
         search_hint = TEXTS[lang].get(
             "search_game_hint",
-            "\n\n💡 يمكنك أيضاً كتابة اسم اللعبة للبحث عنها\n💡 You can also type the game name to search"
+            "\n\n💡 يمكنك أيضاً كتابة اسم اللعبة للبحث عنها\n💡 You can also type the game name to search",
         )
-        
+
         await update.callback_query.edit_message_text(
-            text=TEXTS[lang].get(
-                "select_game_api", "Select game for instant purchase:"
-            ) + search_hint,
+            text=TEXTS[lang].get("select_game_api", "Select game for instant purchase:")
+            + search_hint,
             reply_markup=build_game_keyboard(games, lang, page=0),
         )
         return INSTANT_PURCHASE_GAME
@@ -346,7 +453,7 @@ async def get_instant_purchase_denomination(
     """Handle denomination selection and get required fields, or pagination"""
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
-        
+
         # Handle pagination
         if update.callback_query.data.startswith("api_denoms_page_"):
             page_str = update.callback_query.data.replace("api_denoms_page_", "")
@@ -354,26 +461,33 @@ async def get_instant_purchase_denomination(
                 # Just show current page info, don't change page
                 await update.callback_query.answer()
                 return INSTANT_PURCHASE_DENOMINATION
-            
+
             try:
                 page = int(page_str)
                 catalogues = context.user_data.get("api_catalogues", [])
-                
+
                 if not catalogues:
                     await update.callback_query.answer(
-                        text=TEXTS[lang].get("api_error", "Error connecting to service"),
+                        text=TEXTS[lang].get(
+                            "api_error", "Error connecting to service"
+                        ),
                         show_alert=True,
                     )
                     return INSTANT_PURCHASE_DENOMINATION
-                
+
                 from user.api_purchase.keyboards import DENOMINATIONS_PER_PAGE
-                total_pages = (len(catalogues) + DENOMINATIONS_PER_PAGE - 1) // DENOMINATIONS_PER_PAGE
+
+                total_pages = (
+                    len(catalogues) + DENOMINATIONS_PER_PAGE - 1
+                ) // DENOMINATIONS_PER_PAGE
                 page = max(0, min(page, total_pages - 1))  # Clamp page number
                 context.user_data["api_denoms_page"] = page
-                
+
                 await update.callback_query.edit_message_text(
                     text=TEXTS[lang].get("select_denomination", "Select denomination:"),
-                    reply_markup=build_denomination_keyboard(catalogues, lang, page=page),
+                    reply_markup=build_denomination_keyboard(
+                        catalogues, lang, page=page
+                    ),
                 )
                 return INSTANT_PURCHASE_DENOMINATION
             except (ValueError, IndexError):
@@ -417,24 +531,24 @@ async def get_instant_purchase_denomination(
             context.user_data["api_servers"] = servers
 
             denom_price_usd = float(selected_denom.get("amount", 0))
-            
+
             # Get exchange rate
             exchange_rate = get_exchange_rate()
-            
+
             # Convert price to Sudan currency for display
             denom_price_sudan = denom_price_usd * exchange_rate
-            
+
             # Check user balance from database first (in Sudan currency)
             with models.session_scope() as session:
                 user = session.get(models.User, update.effective_user.id)
                 user_balance_sudan = float(user.balance) if user else 0.0
-            
+
             if user_balance_sudan < denom_price_sudan:
                 await update.callback_query.answer(
                     text=TEXTS[lang]
                     .get(
                         "insufficient_balance_charge",
-                        "Insufficient balance ❌\nYour current balance: {balance} SDG\nRequired price: {price} SDG\n\nPlease charge your balance first 💰"
+                        "Insufficient balance ❌\nYour current balance: {balance} SDG\nRequired price: {price} SDG\n\nPlease charge your balance first 💰",
                     )
                     .format(
                         balance=format_float(user_balance_sudan),
@@ -443,16 +557,16 @@ async def get_instant_purchase_denomination(
                     show_alert=True,
                 )
                 return INSTANT_PURCHASE_DENOMINATION
-            
+
             # Check API balance (API uses USD)
             user_info = await api.get_me()
             api_balance_usd = float(user_info.get("balance", 0))
-            
+
             if api_balance_usd < denom_price_usd:
                 await update.callback_query.answer(
                     text=TEXTS[lang].get(
                         "product_out_of_stock",
-                        "This product is currently out of stock ❌\nWe apologize for the inconvenience"
+                        "This product is currently out of stock ❌\nWe apologize for the inconvenience",
                     ),
                     show_alert=True,
                 )
@@ -461,7 +575,7 @@ async def get_instant_purchase_denomination(
             # Get required fields for the game
             fields_data = await api.get_game_fields(game_code)
             fields = fields_data.get("info", {}).get("fields", [])
-            
+
             # Check if server is required
             servers = await api.get_game_servers(game_code)
             context.user_data["api_requires_server"] = servers is not None
@@ -470,21 +584,27 @@ async def get_instant_purchase_denomination(
             # Show product details and ask for player ID
             game_name = context.user_data.get("api_game_name", game_code)
             denom_name = selected_denom.get("name", "")
-            
-            product_details_text = TEXTS[lang].get(
-                "product_details_text",
-                "<b>Product Details:</b>\n\n"
-                "🎮 <b>Game:</b> {game_name}\n"
-                "📦 <b>Denomination:</b> {denomination}\n"
-                "💰 <b>Price:</b> {price}\n\n"
-                "{enter_player_id}"
-            ).format(
-                game_name=escape_html(game_name),
-                denomination=escape_html(denom_name),
-                price=f"{format_float(denom_price_sudan)} SDG",
-                enter_player_id=TEXTS[lang].get("enter_player_id", "Enter Player ID:"),
+
+            product_details_text = (
+                TEXTS[lang]
+                .get(
+                    "product_details_text",
+                    "<b>Product Details:</b>\n\n"
+                    "🎮 <b>Game:</b> {game_name}\n"
+                    "📦 <b>Denomination:</b> {denomination}\n"
+                    "💰 <b>Price:</b> {price}\n\n"
+                    "{enter_player_id}",
+                )
+                .format(
+                    game_name=escape_html(game_name),
+                    denomination=escape_html(denom_name),
+                    price=f"{format_float(denom_price_sudan)} SDG",
+                    enter_player_id=TEXTS[lang].get(
+                        "enter_player_id", "Enter Player ID:"
+                    ),
+                )
             )
-            
+
             await update.callback_query.edit_message_text(
                 text=product_details_text,
                 reply_markup=build_player_id_keyboard(lang),
@@ -672,10 +792,10 @@ async def create_api_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         denom_name = selected_denom.get("name", "")
         denom_price_usd = float(selected_denom.get("amount", 0))
-        
+
         # Get exchange rate
         exchange_rate = get_exchange_rate()
-        
+
         # Convert price to Sudan currency for display
         denom_price_sudan = denom_price_usd * exchange_rate
 
@@ -701,19 +821,22 @@ async def create_api_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             # Handle API errors (e.g., product out of stock, invalid data, etc.)
             error_message = str(e)
-            if "out of stock" in error_message.lower() or "not available" in error_message.lower() or "insufficient" in error_message.lower():
+            if (
+                "out of stock" in error_message.lower()
+                or "not available" in error_message.lower()
+                or "insufficient" in error_message.lower()
+            ):
                 await processing_msg.edit_text(
                     text=TEXTS[lang].get(
                         "product_out_of_stock",
-                        "This product is currently out of stock ❌\nWe apologize for the inconvenience"
+                        "This product is currently out of stock ❌\nWe apologize for the inconvenience",
                     ),
                 )
             else:
                 await processing_msg.edit_text(
-                    text=TEXTS[lang].get(
-                        "order_created_error",
-                        "Error creating order ❌\n{error}"
-                    ).format(error=error_message),
+                    text=TEXTS[lang]
+                    .get("order_created_error", "Error creating order ❌\n{error}")
+                    .format(error=error_message),
                 )
             return ConversationHandler.END
 
@@ -752,11 +875,15 @@ async def create_api_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "message", TEXTS[lang].get("api_error", "Error connecting to service")
             )
             # Check if error is about product availability
-            if "out of stock" in error_msg.lower() or "not available" in error_msg.lower() or "insufficient" in error_msg.lower():
+            if (
+                "out of stock" in error_msg.lower()
+                or "not available" in error_msg.lower()
+                or "insufficient" in error_msg.lower()
+            ):
                 await processing_msg.edit_text(
                     text=TEXTS[lang].get(
                         "product_out_of_stock",
-                        "This product is currently out of stock ❌\nWe apologize for the inconvenience"
+                        "This product is currently out of stock ❌\nWe apologize for the inconvenience",
                     ),
                 )
             else:
@@ -846,6 +973,7 @@ instant_purchase_handler = ConversationHandler(
     },
     fallbacks=[
         start_command,
+        admin_command,
         back_to_user_home_page_handler,
         CallbackQueryHandler(back_to_api_game, r"^back_to_api_game$"),
         CallbackQueryHandler(back_to_api_denom, r"^back_to_api_denom$"),

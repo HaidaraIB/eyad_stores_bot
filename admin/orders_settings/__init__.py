@@ -6,7 +6,8 @@ from admin.orders_settings.handlers import (
     view_purchase_order_admin_handler,
     update_order_status_handler,
     set_order_status_handler,
-    back_to_order_view_handler,
+    back_to_charging_order_handler,
+    back_to_purchase_order_handler,
     add_order_notes_handler,
     back_to_admin_charging_balance_orders_handler,
     back_to_admin_purchase_orders_handler,
@@ -22,11 +23,11 @@ __all__ = [
     "view_purchase_order_admin_handler",
     "update_order_status_handler",
     "set_order_status_handler",
-    "back_to_order_view_handler",
+    "back_to_charging_order_handler",
+    "back_to_purchase_order_handler",
     "add_order_notes_handler",
     "back_to_admin_charging_balance_orders_handler",
     "back_to_admin_purchase_orders_handler",
     "request_charging_order_handler",
     "request_purchase_order_handler",
 ]
-

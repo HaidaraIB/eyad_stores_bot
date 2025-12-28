@@ -15,6 +15,7 @@ class Permission(Enum):
     MANAGE_PAYMENT_METHODS = "manage_payment_methods"
     MANAGE_ORDERS = "manage_orders"
     MANAGE_GENERAL_SETTINGS = "manage_general_settings"
+    FILTER_API_GAMES = "filter_api_games"
 
 
 class AdminPermission(Base):

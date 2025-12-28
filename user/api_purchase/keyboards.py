@@ -13,6 +13,42 @@ DENOMINATIONS_PER_PAGE = 6  # Number of denominations per page
 SEARCH_RESULTS_PER_PAGE = 6  # Number of search results per page
 
 
+def get_game_display_name(game_code: str, default_name: str, lang: models.Language) -> str:
+    """Get the display name for a game, using ApiGame if available"""
+    with models.session_scope() as s:
+        api_game = (
+            s.query(models.ApiGame)
+            .filter(
+                models.ApiGame.api_game_code == game_code,
+                models.ApiGame.is_active == True
+            )
+            .first()
+        )
+        if api_game:
+            return api_game.get_display_name(lang)
+    return default_name
+
+
+def filter_active_games(api_games: list) -> list:
+    """Filter API games to only include those that are active in ApiGame table"""
+    with models.session_scope() as s:
+        # Get all active filtered games
+        active_filtered_games = {
+            game.api_game_code: game
+            for game in s.query(models.ApiGame)
+            .filter(models.ApiGame.is_active == True)
+            .all()
+        }
+    
+    # Filter API games to only include active filtered ones
+    filtered_games = [
+        game for game in api_games
+        if game.get("code") in active_filtered_games
+    ]
+    
+    return filtered_games
+
+
 def build_game_keyboard(
     games: list, lang: models.Language, page: int = 0
 ) -> InlineKeyboardMarkup:
@@ -27,10 +63,16 @@ def build_game_keyboard(
     # Get games for current page
     page_games = games[start_idx:end_idx]
     
+    # Get display names using ApiGame if available
+    game_texts = [
+        get_game_display_name(game["code"], game["name"], lang)
+        for game in page_games
+    ]
+    
     # Build keyboard with games
     game_keyboard = build_keyboard(
         columns=1,
-        texts=[game["name"] for game in page_games],
+        texts=game_texts,
         buttons_data=[f"api_game_{game['code']}" for game in page_games],
     )
     
@@ -192,10 +234,16 @@ def build_search_results_keyboard(
     # Get games for current page
     page_games = games[start_idx:end_idx]
     
+    # Get display names using ApiGame if available
+    game_texts = [
+        get_game_display_name(game["code"], game["name"], lang)
+        for game in page_games
+    ]
+    
     # Build keyboard with games
     search_keyboard = build_keyboard(
         columns=1,
-        texts=[game["name"] for game in page_games],
+        texts=game_texts,
         buttons_data=[f"api_game_{game['code']}" for game in page_games],
     )
     

@@ -12,8 +12,8 @@ from common.lang_dicts import TEXTS, get_lang
 from common.back_to_home_page import back_to_admin_home_page_handler
 from common.common import format_float
 from custom_filters import PrivateChatAndAdmin, PermissionFilter
+from start import admin_command, start_command
 import models
-from start import admin_command
 
 # Conversation state
 SET_USD_TO_SUDAN_RATE = range(1)
@@ -120,5 +120,6 @@ set_usd_to_sudan_rate_handler = ConversationHandler(
         back_to_admin_home_page_handler,
         general_settings_handler,
         admin_command,
+        start_command,
     ],
 )
