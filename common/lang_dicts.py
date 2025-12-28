@@ -2,7 +2,7 @@ import models
 
 TEXTS = {
     models.Language.ARABIC: {
-        "user_welcome_msg": "أهلاً بك...",
+        "user_welcome_msg": "أهلاً {name}",
         "admin_welcome_msg": "أهلاً بك...",
         "force_join_msg": (
             f"لبدء استخدام البوت يجب عليك الانضمام الى محادثة البوت أولاً\n\n"
@@ -397,7 +397,7 @@ TEXTS = {
         "game_not_found": "اللعبة غير موجودة",
     },
     models.Language.ENGLISH: {
-        "user_welcome_msg": "Welcome...",
+        "user_welcome_msg": "Welcome {name}",
         "admin_welcome_msg": "Welcome...",
         "force_join_msg": (
             f"You have to join the bot's chat in order to be able to use it\n\n"

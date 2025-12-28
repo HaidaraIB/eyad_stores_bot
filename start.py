@@ -43,7 +43,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await set_commands(update, context)
         lang = get_lang(update.effective_user.id)
         await update.message.reply_text(
-            text=TEXTS[lang]["user_welcome_msg"],
+            text=TEXTS[lang]["user_welcome_msg"].format(
+                name=update.effective_user.mention_html()
+            ),
             reply_markup=build_user_keyboard(lang),
         )
         return ConversationHandler.END
