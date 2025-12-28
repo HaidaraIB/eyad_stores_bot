@@ -256,7 +256,7 @@ TEXTS = {
         # Profile and Orders
         "profile_title": "الملف الشخصي 👤",
         "balance": "الرصيد",
-        "current_balance": "رصيدك الحالي: <code>{balance}</code>",
+        "current_balance": "رصيدك الحالي: <code>{balance}</code> SDG",
         "select_payment_method": "اختر طريقة الدفع:",
         "select_payment_address": "اختر عنوان الدفع:",
         "enter_charge_amount": "أدخل المبلغ الذي تريد شحنه:",
@@ -278,7 +278,7 @@ TEXTS = {
         "no_orders": "لا توجد طلبات ❗️",
         "charging_balance_orders": "طلبات شحن الرصيد",
         "purchase_orders": "طلبات الشراء",
-        "order_details": "تفاصيل الطلب",
+        "order_details_text": "تفاصيل الطلب",
         "order_id": "رقم الطلب",
         "order_status": "حالة الطلب",
         "order_amount": "المبلغ",
@@ -295,8 +295,17 @@ TEXTS = {
         "order_status_cancelled": "ملغي",
         "order_status_refunded": "مسترد",
         "order_status_failed": "فشل",
-        "insufficient_balance": "رصيدك غير كافٍ ❌\nرصيدك الحالي: {balance}\nالسعر المطلوب: {price}",
-        "insufficient_balance_charge": "رصيدك غير كافٍ ❌\nرصيدك الحالي: {balance} SDG\nالسعر المطلوب: {price} SDG\n\nيرجى شحن رصيدك أولاً 💰",
+        "insufficient_balance": (
+            "رصيدك غير كافٍ ❌\n"
+            "رصيدك الحالي: {balance} SDG\n"
+            "السعر المطلوب: {price} SDG"
+        ),
+        "insufficient_balance_charge": (
+            "رصيدك غير كافٍ ❌\n"
+            "رصيدك الحالي: {balance} SDG\n"
+            "السعر المطلوب: {price} SDG\n\n"
+            "يرجى شحن رصيدك أولاً 💰"
+        ),
         "item_not_found": "العنصر غير موجود أو غير نشط ❌",
         "order_not_found": "الطلب غير موجود ❌",
         "admin_notes": "ملاحظات الآدمن",
@@ -311,7 +320,9 @@ TEXTS = {
             "السعر الحالي: <code>{current_rate}</code>"
         ),
         "invalid_rate": "سعر الصرف غير صحيح ❌\nيجب أن يكون رقماً موجباً",
-        "rate_updated_success": "تم تحديث سعر الصرف بنجاح ✅\nالسعر الجديد: <code>{rate}</code>",
+        "rate_updated_success": (
+            "تم تحديث سعر الصرف بنجاح ✅\n" "السعر الجديد: <code>{rate}</code>"
+        ),
         "change_status": "تغيير الحالة",
         "add_notes": "إضافة ملاحظات",
         "select_order_status": "اختر حالة الطلب:",
@@ -343,18 +354,28 @@ TEXTS = {
         "order_processing": "جاري معالجة الطلب...",
         "order_created_success": "تم إنشاء الطلب بنجاح ✅\nرقم الطلب: {order_id}",
         "order_created_error": "حدث خطأ أثناء إنشاء الطلب ❌\n{error}",
-        "insufficient_balance_api": "رصيدك غير كافٍ ❌\nرصيدك الحالي: {balance}\nالسعر المطلوب: {price}",
-        "product_out_of_stock": "هذا المنتج غير متوفر حالياً ❌\nنعتذر عن الإزعاج",
+        "insufficient_balance_api": (
+            "رصيدك غير كافٍ ❌\n"
+            "رصيدك الحالي: {balance} SDG\n"
+            "السعر المطلوب: {price} SDG"
+        ),
+        "product_out_of_stock": ("هذا المنتج غير متوفر حالياً ❌\n" "نعتذر عن الإزعاج"),
         "no_games_available": "لا توجد ألعاب متاحة حالياً ❗️",
         "no_denominations_available": "لا توجد حزم متاحة لهذه اللعبة ❗️",
         "api_error": "حدث خطأ في الاتصال بالخدمة ❌",
-        "order_details": "تفاصيل الطلب:\nاللعبة: {game_name}\nالحزمة: {denomination}\nالسعر: {price}\nمعرف اللاعب: {player_id}",
+        "order_details": (
+            "تفاصيل الطلب:\n"
+            "اللعبة: {game_name}\n"
+            "الحزمة: {denomination}\n"
+            "السعر: {price} SDG\n"
+            "معرف اللاعب: {player_id}"
+        ),
         "product_details": "تفاصيل المنتج 📦",
         "product_details_text": (
             "<b>تفاصيل المنتج:</b>\n\n"
             "🎮 <b>اللعبة:</b> {game_name}\n"
             "📦 <b>الحزمة:</b> {denomination}\n"
-            "💰 <b>السعر:</b> <code>{price}</code>\n\n"
+            "💰 <b>السعر:</b> <code>{price}</code> SDG\n\n"
             "{enter_player_id}"
         ),
     },
@@ -635,7 +656,7 @@ TEXTS = {
         "no_orders": "No orders ❗️",
         "charging_balance_orders": "Charging Balance Orders",
         "purchase_orders": "Purchase Orders",
-        "order_details": "Order Details",
+        "order_details_text": "Order Details",
         "order_id": "Order ID",
         "order_status": "Order Status",
         "order_amount": "Amount",
@@ -652,8 +673,17 @@ TEXTS = {
         "order_status_cancelled": "Cancelled",
         "order_status_refunded": "Refunded",
         "order_status_failed": "Failed",
-        "insufficient_balance": "Insufficient balance ❌\nYour current balance: {balance}\nRequired price: {price}",
-        "insufficient_balance_charge": "Insufficient balance ❌\nYour current balance: {balance} SDG\nRequired price: {price} SDG\n\nPlease charge your balance first 💰",
+        "insufficient_balance": (
+            "Insufficient balance ❌\n"
+            "Your current balance: {balance} SDG\n"
+            "Required price: {price} SDG"
+        ),
+        "insufficient_balance_charge": (
+            "Insufficient balance ❌\n"
+            "Your current balance: {balance} SDG\n"
+            "Required price: {price} SDG\n\n"
+            "Please charge your balance first 💰"
+        ),
         "item_not_found": "Item not found or inactive ❌",
         "order_not_found": "Order not found ❌",
         "admin_notes": "Admin Notes",
@@ -668,7 +698,9 @@ TEXTS = {
             "Current rate: <code>{current_rate}</code>"
         ),
         "invalid_rate": "Invalid rate ❌\nMust be a positive number",
-        "rate_updated_success": "Exchange rate updated successfully ✅\nNew rate: <code>{rate}</code>",
+        "rate_updated_success": (
+            "Exchange rate updated successfully ✅\n" "New rate: <code>{rate}</code>"
+        ),
         "change_status": "Change Status",
         "add_notes": "Add Notes",
         "select_order_status": "Select order status:",
@@ -714,13 +746,19 @@ TEXTS = {
         "no_games_available": "No games available at the moment ❗️",
         "no_denominations_available": "No denominations available for this game ❗️",
         "api_error": "Error connecting to service ❌",
-        "order_details": "Order Details:\nGame: {game_name}\nDenomination: {denomination}\nPrice: {price}\nPlayer ID: {player_id}",
+        "order_details": (
+            "Order Details:\n"
+            "Game: <b>{game_name}</b>\n"
+            "Denomination: <b>{denomination}</b>\n"
+            "Price: <code>{price}</code> SDG\n"
+            "Player ID: <b>{player_id}</b>"
+        ),
         "product_details": "Product Details 📦",
         "product_details_text": (
             "<b>Product Details:</b>\n\n"
             "🎮 <b>Game:</b> {game_name}\n"
             "📦 <b>Denomination:</b> {denomination}\n"
-            "💰 <b>Price:</b> <code>{price}</code>\n\n"
+            "💰 <b>Price:</b> <code>{price}</code> SDG\n\n"
             "{enter_player_id}"
         ),
     },

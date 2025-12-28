@@ -59,7 +59,7 @@ class PurchaseOrder(Base):
         status_text = texts.get(f"order_status_{self.status.value}", self.status.value)
         
         lines = [
-            f"<b>{texts['order_details']}</b>",
+            f"<b>{texts['order_details_text']}</b>",
             "",
             f"<b>{texts['order_id']}:</b> <code>{self.id}</code>",
             f"<b>{texts['order_status']}:</b> {status_text}",
