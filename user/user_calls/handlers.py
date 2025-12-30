@@ -170,9 +170,48 @@ async def get_purchase_order_account_id(
 
             # Deduct balance
             user.balance -= item.price
+            s.commit()  # Commit to save balance deduction
+
+            # Build success message with full order details
+            
+            order_text = (
+                TEXTS[lang]
+                .get(
+                    "order_created_success",
+                    "Order created successfully ✅\nOrder ID: {order_id}",
+                )
+                .format(order_id=order_id)
+            )
+            
+            status_text = TEXTS[lang].get(f"order_status_{new_order.status.value}", new_order.status.value)
+            
+            order_details = (
+                TEXTS[lang]
+                .get(
+                    "manual_order_details",
+                    (
+                        "Order Details:\n"
+                        "Status: {status}\n"
+                        "Item: <b>{item_name}</b>\n"
+                        "Game: <b>{game_name}</b>\n"
+                        "Price: <code>{price}</code> SDG\n"
+                        "Game Account ID: <code>{game_account_id}</code>\n"
+                        "Current Balance: <code>{balance}</code> SDG"
+                    ),
+                )
+                .format(
+                    status=status_text,
+                    item_name=escape_html(item.name),
+                    game_name=escape_html(item.game.name),
+                    price=format_float(item.price),
+                    game_account_id=escape_html(game_account_id),
+                    balance=format_float(user.balance),
+                )
+            )
+            order_text += f"\n\n{order_details}"
 
             await update.message.reply_text(
-                text=TEXTS[lang]["purchase_order_submitted"].format(order_id=order_id),
+                text=order_text,
             )
 
             # Notify all admins with MANAGE_ORDERS permission

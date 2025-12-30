@@ -270,6 +270,14 @@ TEXTS = {
         "charge_balance_instructions_mobile_money": "أرسل المبلغ إلى أحد أرقام المحافظ النقدية التالية وعند الانتهاء قم برفع إثبات الدفع (صورة من المعاملة):",
         "charge_balance_instructions_other": "أرسل المبلغ إلى أحد العناوين التالية وعند الانتهاء قم برفع إثبات الدفع:",
         "charge_order_submitted": "تم إرسال طلب شحن الرصيد بنجاح ✅\nرقم الطلب: <code>{order_id}</code>",
+        "charging_order_details": (
+            "تفاصيل الطلب:\n"
+            "الحالة: {status}\n"
+            "المبلغ: <code>{amount}</code> SDG\n"
+            "طريقة الدفع: <b>{payment_method}</b>\n"
+            "عنوان الدفع: <code>{payment_address}</code>\n"
+            "الرصيد الحالي: <code>{balance}</code> SDG"
+        ),
         "select_game": "اختر اللعبة:",
         "select_item": "اختر العنصر:",
         "enter_game_account_id": "أدخل معرف حساب اللعبة الخاص بك:",
@@ -390,6 +398,15 @@ TEXTS = {
             "السعر: <code>{price} SDG</code>\n"
             "معرف اللاعب: <code>{player_id}</code>\n"
             "الرصيد الحالي: <code>{balance}</code>"
+        ),
+        "manual_order_details": (
+            "تفاصيل الطلب:\n"
+            "الحالة: {status}\n"
+            "المنتج: <b>{item_name}</b>\n"
+            "اللعبة: <b>{game_name}</b>\n"
+            "السعر: <code>{price}</code> SDG\n"
+            "معرف الحساب: <code>{game_account_id}</code>\n"
+            "الرصيد الحالي: <code>{balance}</code> SDG"
         ),
         "product_details": "تفاصيل المنتج 📦",
         "product_details_text": (
@@ -685,6 +702,14 @@ TEXTS = {
         "charge_balance_instructions_mobile_money": "Send the money to one of the following mobile money numbers and when you're finished provide a payment proof (transaction screenshot):",
         "charge_balance_instructions_other": "Send the money to one of the following addresses and when you're finished provide a payment proof:",
         "charge_order_submitted": "Charging balance order submitted successfully ✅\nOrder ID: <code>{order_id}</code>",
+        "charging_order_details": (
+            "Order Details:\n"
+            "Status: {status}\n"
+            "Amount: <code>{amount}</code> SDG\n"
+            "Payment Method: <b>{payment_method}</b>\n"
+            "Payment Address: <code>{payment_address}</code>\n"
+            "Current Balance: <code>{balance}</code> SDG"
+        ),
         "select_game": "Select game:",
         "select_item": "Select item:",
         "enter_game_account_id": "Enter your game account ID:",
@@ -810,6 +835,15 @@ TEXTS = {
             "Price: <code>{price}</code> SDG\n"
             "Player ID: <code>{player_id}</code>\n"
             "Current Balance: <code>{balance}</code>"
+        ),
+        "manual_order_details": (
+            "Order Details:\n"
+            "Status: {status}\n"
+            "Item: <b>{item_name}</b>\n"
+            "Game: <b>{game_name}</b>\n"
+            "Price: <code>{price}</code> SDG\n"
+            "Game Account ID: <code>{game_account_id}</code>\n"
+            "Current Balance: <code>{balance}</code> SDG"
         ),
         "product_details": "Product Details 📦",
         "product_details_text": (

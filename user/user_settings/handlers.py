@@ -311,6 +311,9 @@ async def get_charge_balance_proof(update: Update, context: ContextTypes.DEFAULT
             return CHARGE_BALANCE_PROOF
 
         with models.session_scope() as s:
+            user = s.get(models.User, update.effective_user.id)
+            payment_method_address = s.get(models.PaymentMethodAddress, addr_id)
+            
             new_order = models.ChargingBalanceOrder(
                 user_id=update.effective_user.id,
                 payment_method_address_id=addr_id,
@@ -321,6 +324,46 @@ async def get_charge_balance_proof(update: Update, context: ContextTypes.DEFAULT
             s.add(new_order)
             s.flush()
             order_id = new_order.id
+            s.commit()
+
+            # Build success message with full order details
+            order_text = (
+                TEXTS[lang]
+                .get(
+                    "order_created_success",
+                    "Order created successfully ✅\nOrder ID: {order_id}",
+                )
+                .format(order_id=order_id)
+            )
+            
+            status_text = TEXTS[lang].get(f"order_status_{new_order.status.value}", new_order.status.value)
+            
+            # Build order details
+            payment_method_name = payment_method_address.payment_method.name if payment_method_address else "N/A"
+            payment_address = payment_method_address.address if payment_method_address else "N/A"
+            
+            order_details = (
+                TEXTS[lang]
+                .get(
+                    "charging_order_details",
+                    (
+                        "Order Details:\n"
+                        "Status: {status}\n"
+                        "Amount: <code>{amount}</code> SDG\n"
+                        "Payment Method: <b>{payment_method}</b>\n"
+                        "Payment Address: <code>{payment_address}</code>\n"
+                        "Current Balance: <code>{balance}</code> SDG"
+                    ),
+                )
+                .format(
+                    status=status_text,
+                    amount=format_float(amount),
+                    payment_method=escape_html(payment_method_name),
+                    payment_address=escape_html(payment_address),
+                    balance=format_float(user.balance),
+                )
+            )
+            order_text += f"\n\n{order_details}"
 
         # Clean up user_data
         context.user_data.pop("charge_balance_pm_id", None)
@@ -328,7 +371,7 @@ async def get_charge_balance_proof(update: Update, context: ContextTypes.DEFAULT
         context.user_data.pop("charge_balance_amount", None)
 
         await update.message.reply_text(
-            text=TEXTS[lang]["charge_order_submitted"].format(order_id=order_id),
+            text=order_text,
         )
 
         # Notify all admins with MANAGE_ORDERS permission
