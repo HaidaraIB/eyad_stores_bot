@@ -82,6 +82,22 @@ async def poll_api_orders_status(context: ContextTypes.DEFAULT_TYPE):
                                 db_order.api_message = api_message
                             if player_name:
                                 db_order.player_name = player_name
+                            
+                            # If order failed or cancelled, refund balance to user
+                            # (API automatically refunds, so we need to refund in our DB too)
+                            if status_changed and new_status in [
+                                models.ApiPurchaseOrderStatus.FAILED,
+                                models.ApiPurchaseOrderStatus.CANCELLED,
+                            ]:
+                                user = update_session.get(models.User, db_order.user_id)
+                                if user:
+                                    # Refund the price in SDG
+                                    user.balance += db_order.price_sudan
+                                    logger.info(
+                                        f"Refunded {db_order.price_sudan} SDG to user {user.user_id} "
+                                        f"for failed/cancelled order {db_order.api_order_id}"
+                                    )
+                            
                             update_session.commit()
 
                             # Notify user if status changed to terminal state
@@ -124,12 +140,24 @@ async def notify_user_order_status(
                 "api_order_failed",
                 "Your order has failed.",
             )
+            # Add refund message
+            refund_text = TEXTS[lang].get(
+                "balance_refunded",
+                "Your balance has been refunded: {amount} SDG",
+            ).format(amount=format_float(order.price_sudan))
+            status_text += f"\n\n💰 {refund_text}"
         elif new_status == models.ApiPurchaseOrderStatus.CANCELLED:
             status_emoji = "🚫"
             status_text = TEXTS[lang].get(
                 "api_order_cancelled",
                 "Your order has been cancelled.",
             )
+            # Add refund message
+            refund_text = TEXTS[lang].get(
+                "balance_refunded",
+                "Your balance has been refunded: {amount} SDG",
+            ).format(amount=format_float(order.price_sudan))
+            status_text += f"\n\n💰 {refund_text}"
         else:
             return  # Don't notify for non-terminal statuses
 

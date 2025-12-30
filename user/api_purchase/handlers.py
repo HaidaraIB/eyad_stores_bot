@@ -780,179 +780,174 @@ async def get_instant_purchase_server_id(
 
 async def create_api_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Create the order via API"""
-    lang = get_lang(update.effective_user.id)
+    if PrivateChat().filter(update):
+        lang = get_lang(update.effective_user.id)
 
-    try:
-        api = G2BulkAPI()
-        game_code = context.user_data.get("api_game_code")
-        game_name = context.user_data.get("api_game_name", game_code)
-        selected_denom = context.user_data.get("api_selected_denom", {})
-        player_id = context.user_data.get("api_player_id")
-        server_id = context.user_data.get("api_server_id")
+        try:
+            api = G2BulkAPI()
+            game_code = context.user_data.get("api_game_code")
+            game_name = context.user_data.get("api_game_name", game_code)
+            selected_denom = context.user_data.get("api_selected_denom", {})
+            player_id = context.user_data.get("api_player_id")
+            server_id = context.user_data.get("api_server_id")
 
-        denom_name = selected_denom.get("name", "")
-        denom_price_usd = float(selected_denom.get("amount", 0))
+            denom_name = selected_denom.get("name", "")
+            denom_price_usd = float(selected_denom.get("amount", 0))
 
-        # Get exchange rate
-        exchange_rate = get_exchange_rate()
+            # Get exchange rate
+            exchange_rate = get_exchange_rate()
 
-        # Convert price to Sudan currency for display
-        denom_price_sudan = denom_price_usd * exchange_rate
+            # Convert price to Sudan currency for display
+            denom_price_sudan = denom_price_usd * exchange_rate
 
-        # Show processing message
-        if update.message:
+            # Show processing message
             processing_msg = await update.message.reply_text(
                 text=TEXTS[lang].get("order_processing", "Processing order..."),
             )
-        else:
-            processing_msg = await update.callback_query.message.reply_text(
-                text=TEXTS[lang].get("order_processing", "Processing order..."),
-            )
 
-        # Create order
-        try:
-            order_data = await api.create_game_order(
-                game_code=game_code,
-                catalogue_name=denom_name,
-                player_id=player_id,
-                server_id=server_id,
-                remark=f"Order from Telegram Bot - User ID: {update.effective_user.id}",
-            )
-        except Exception as e:
-            # Handle API errors (e.g., product out of stock, invalid data, etc.)
-            error_message = str(e)
-            if (
-                "out of stock" in error_message.lower()
-                or "not available" in error_message.lower()
-                or "insufficient" in error_message.lower()
-            ):
-                await processing_msg.edit_text(
-                    text=TEXTS[lang].get(
-                        "product_out_of_stock",
-                        "This product is currently out of stock ❌\nWe apologize for the inconvenience",
-                    ),
-                )
-            else:
-                await processing_msg.edit_text(
-                    text=TEXTS[lang]
-                    .get("order_created_error", "Error creating order ❌\n{error}")
-                    .format(error=error_message),
-                )
-            return ConversationHandler.END
-
-        if order_data.get("success"):
-            order_info = order_data.get("order", {})
-            api_order_id = order_info.get("order_id")
-            api_message = order_data.get("message", "")
-
-            # Store order in database
-            with models.session_scope() as s:
-                api_order = models.ApiPurchaseOrder(
-                    user_id=update.effective_user.id,
-                    api_order_id=api_order_id,
-                    api_game_code=game_code,
-                    denomination_name=denom_name,
+            # Create order
+            try:
+                order_data = await api.create_game_order(
+                    game_code=game_code,
+                    catalogue_name=denom_name,
                     player_id=player_id,
-                    player_name=order_info.get("player_name"),
                     server_id=server_id,
-                    price_usd=denom_price_usd,
-                    price_sudan=denom_price_sudan,
-                    status=models.ApiPurchaseOrderStatus.PENDING,
-                    api_message=api_message,
                     remark=f"Order from Telegram Bot - User ID: {update.effective_user.id}",
                 )
-                s.add(api_order)
-                s.commit()
+            except Exception as e:
+                # Handle API errors (e.g., product out of stock, invalid data, etc.)
+                error_message = str(e)
+                if (
+                    "out of stock" in error_message.lower()
+                    or "not available" in error_message.lower()
+                    or "insufficient" in error_message.lower()
+                ):
+                    await processing_msg.edit_text(
+                        text=TEXTS[lang].get(
+                            "product_out_of_stock",
+                            "This product is currently out of stock ❌\nWe apologize for the inconvenience",
+                        ),
+                    )
+                else:
+                    await processing_msg.edit_text(
+                        text=TEXTS[lang]
+                        .get("order_created_error", "Error creating order ❌\n{error}")
+                        .format(error=error_message),
+                    )
+                return ConversationHandler.END
 
-            # Show success message
-            order_text = (
-                TEXTS[lang]
-                .get(
-                    "order_created_success",
-                    "Order created successfully ✅\nOrder ID: {order_id}",
-                )
-                .format(order_id=api_order_id)
-            )
-            order_details = (
-                TEXTS[lang]
-                .get(
-                    "order_details",
-                    (
-                        "Order Details:\n"
-                        "Game: {game_name}\n"
-                        "Denomination: {denomination}\n"
-                        "Price: {price}\n"
-                        "Player ID: {player_id}"
-                    ),
-                )
-                .format(
-                    game_name=escape_html(game_name),
-                    denomination=escape_html(denom_name),
-                    price=format_float(denom_price_sudan),
-                    player_id=escape_html(player_id),
-                )
-            )
-            order_text += f"\n\n{order_details}"
+            if order_data.get("success"):
+                order_info = order_data.get("order", {})
+                api_order_id = order_info.get("order_id")
+                api_message = order_data.get("message", "")
 
-            await processing_msg.edit_text(
-                text=order_text,
-            )
-        else:
-            error_msg = order_data.get(
-                "message", TEXTS[lang].get("api_error", "Error connecting to service")
-            )
-            # Check if error is about product availability
-            if (
-                "out of stock" in error_msg.lower()
-                or "not available" in error_msg.lower()
-                or "insufficient" in error_msg.lower()
-            ):
+                # Store order in database and deduct balance
+                with models.session_scope() as s:
+                    user = s.get(models.User, update.effective_user.id)
+                    if not user:
+                        await processing_msg.edit_text(
+                            text=TEXTS[lang].get("error", "An error occurred ❌"),
+                        )
+                        return ConversationHandler.END
+                    
+                    # Deduct balance in SDG (API already deducted from their balance)
+                    user.balance -= denom_price_sudan
+                    
+                    api_order = models.ApiPurchaseOrder(
+                        user_id=update.effective_user.id,
+                        api_order_id=api_order_id,
+                        api_game_code=game_code,
+                        denomination_name=denom_name,
+                        player_id=player_id,
+                        player_name=order_info.get("player_name"),
+                        server_id=server_id,
+                        price_usd=denom_price_usd,
+                        price_sudan=denom_price_sudan,
+                        status=models.ApiPurchaseOrderStatus.PENDING,
+                        api_message=api_message,
+                        remark=f"Order from Telegram Bot - User ID: {update.effective_user.id}",
+                    )
+                    s.add(api_order)
+                    s.commit()  # Commit to save balance deduction
+
+                    # Show success message
+                    order_text = (
+                        TEXTS[lang]
+                        .get(
+                            "order_created_success",
+                            "Order created successfully ✅\nOrder ID: {order_id}",
+                        )
+                        .format(order_id=api_order_id)
+                    )
+                    order_details = (
+                        TEXTS[lang]
+                        .get(
+                            "order_details",
+                            (
+                                "Order Details:\n"
+                                "Game: {game_name}\n"
+                                "Denomination: {denomination}\n"
+                                "Price: {price}\n"
+                                "Player ID: {player_id}\n"
+                                "Current Balance: {balance}"
+                            ),
+                        )
+                        .format(
+                            game_name=escape_html(game_name),
+                            denomination=escape_html(denom_name),
+                            price=format_float(denom_price_sudan),
+                            player_id=escape_html(player_id),
+                            balance=format_float(user.balance),
+                        )
+                    )
+                    order_text += f"\n\n{order_details}"
+
                 await processing_msg.edit_text(
-                    text=TEXTS[lang].get(
-                        "product_out_of_stock",
-                        "This product is currently out of stock ❌\nWe apologize for the inconvenience",
-                    ),
+                    text=order_text,
                 )
             else:
-                await processing_msg.edit_text(
-                    text=TEXTS[lang]
-                    .get("order_created_error", "Error creating order ❌\n{error}")
-                    .format(error=error_msg),
+                error_msg = order_data.get(
+                    "message",
+                    TEXTS[lang].get("api_error", "Error connecting to service"),
                 )
+                # Check if error is about product availability
+                if (
+                    "out of stock" in error_msg.lower()
+                    or "not available" in error_msg.lower()
+                    or "insufficient" in error_msg.lower()
+                ):
+                    await processing_msg.edit_text(
+                        text=TEXTS[lang].get(
+                            "product_out_of_stock",
+                            "This product is currently out of stock ❌\nWe apologize for the inconvenience",
+                        ),
+                    )
+                else:
+                    await processing_msg.edit_text(
+                        text=TEXTS[lang]
+                        .get("order_created_error", "Error creating order ❌\n{error}")
+                        .format(error=error_msg),
+                    )
 
-        # Clean up user_data
-        context.user_data.pop("api_game_code", None)
-        context.user_data.pop("api_game_name", None)
-        context.user_data.pop("api_catalogues", None)
-        context.user_data.pop("api_selected_denom", None)
-        context.user_data.pop("api_player_id", None)
-        context.user_data.pop("api_server_id", None)
-        context.user_data.pop("api_requires_server", None)
-        context.user_data.pop("api_servers", None)
+            # Clean up user_data
+            context.user_data.pop("api_game_code", None)
+            context.user_data.pop("api_game_name", None)
+            context.user_data.pop("api_catalogues", None)
+            context.user_data.pop("api_selected_denom", None)
+            context.user_data.pop("api_player_id", None)
+            context.user_data.pop("api_server_id", None)
+            context.user_data.pop("api_requires_server", None)
+            context.user_data.pop("api_servers", None)
 
-        # Return to home page
-        if update.message:
+            # Return to home page
             await update.message.reply_text(
                 text=TEXTS[lang].get("home_page", "Home Page 🔝"),
                 reply_markup=build_user_keyboard(lang),
             )
-        else:
-            await update.callback_query.message.reply_text(
-                text=TEXTS[lang].get("home_page", "Home Page 🔝"),
-                reply_markup=build_user_keyboard(lang),
-            )
 
-        return ConversationHandler.END
-    except Exception as e:
-        error_msg = str(e)
-        if update.message:
+        except Exception as e:
+            error_msg = str(e)
             await update.message.reply_text(
-                text=TEXTS[lang]
-                .get("order_created_error", "Error creating order ❌\n{error}")
-                .format(error=error_msg),
-            )
-        else:
-            await update.callback_query.message.reply_text(
                 text=TEXTS[lang]
                 .get("order_created_error", "Error creating order ❌\n{error}")
                 .format(error=error_msg),

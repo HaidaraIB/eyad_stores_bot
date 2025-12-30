@@ -374,6 +374,7 @@ TEXTS = {
         "api_order_completed": "تم إكمال طلبك بنجاح!",
         "api_order_failed": "فشل طلبك.",
         "api_order_cancelled": "تم إلغاء طلبك.",
+        "balance_refunded": "تم إرجاع رصيدك: {amount} SDG",
         "api_order_id": "رقم الطلب من API",
         "player_id": "رقم اللاعب",
         "player_name": "اسم اللاعب",
@@ -387,7 +388,8 @@ TEXTS = {
             "اللعبة: <b>{game_name}</b>\n"
             "الحزمة: <b>{denomination}</b>\n"
             "السعر: <code>{price} SDG</code>\n"
-            "معرف اللاعب: <code>{player_id}</code>"
+            "معرف اللاعب: <code>{player_id}</code>\n"
+            "الرصيد الحالي: <code>{balance}</code>"
         ),
         "product_details": "تفاصيل المنتج 📦",
         "product_details_text": (
@@ -792,6 +794,7 @@ TEXTS = {
         "api_order_completed": "Your order has been completed successfully!",
         "api_order_failed": "Your order has failed.",
         "api_order_cancelled": "Your order has been cancelled.",
+        "balance_refunded": "Your balance has been refunded: {amount} SDG",
         "api_order_id": "API Order ID",
         "player_id": "Player ID",
         "player_name": "Player Name",
@@ -805,7 +808,8 @@ TEXTS = {
             "Game: <b>{game_name}</b>\n"
             "Denomination: <b>{denomination}</b>\n"
             "Price: <code>{price}</code> SDG\n"
-            "Player ID: <code>{player_id}</code>"
+            "Player ID: <code>{player_id}</code>\n"
+            "Current Balance: <code>{balance}</code>"
         ),
         "product_details": "Product Details 📦",
         "product_details_text": (

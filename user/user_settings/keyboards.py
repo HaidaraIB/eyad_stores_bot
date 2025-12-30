@@ -11,12 +11,6 @@ def build_settings_keyboard(lang: models.Language):
     keyboard = [
         [
             InlineKeyboardButton(
-                text=BUTTONS[lang]["profile"],
-                callback_data="user_profile",
-            )
-        ],
-        [
-            InlineKeyboardButton(
                 text=BUTTONS[lang]["lang"],
                 callback_data="change_lang",
             )

@@ -27,6 +27,12 @@ def build_user_keyboard(lang: models.Language):
         ],
         [
             InlineKeyboardButton(
+                text=BUTTONS[lang]["profile"],
+                callback_data="user_profile",
+            )
+        ],
+        [
+            InlineKeyboardButton(
                 text=BUTTONS[lang]["settings"],
                 callback_data="user_settings",
             ),
