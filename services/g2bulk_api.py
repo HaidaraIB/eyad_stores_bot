@@ -152,7 +152,7 @@ class G2BulkAPI:
         """Check the current status of a specific game order"""
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                f"{self.BASE_URL}/games/status",
+                f"{self.BASE_URL}/games/order/status",
                 headers=self._get_headers(),
                 json={
                     "order_id": order_id,

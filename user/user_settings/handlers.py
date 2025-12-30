@@ -670,7 +670,7 @@ async def show_api_purchase_orders(update: Update, context: ContextTypes.DEFAULT
                 status_text = TEXTS[lang].get(
                     f"api_order_status_{order.status.value}", order.status.value
                 )
-                order_text = f"#{order.id} - {escape_html(order.game_name[:15])} - {status_text}"
+                order_text = f"#{order.id} - {escape_html(order.api_game.api_game_name[:15])} - {status_text}"
                 order_texts.append(order_text)
                 order_data.append(f"view_api_purchase_order_{order.id}")
 

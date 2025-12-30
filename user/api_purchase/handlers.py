@@ -842,10 +842,7 @@ async def create_api_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if order_data.get("success"):
             order_info = order_data.get("order", {})
-            api_order_id = order_info.get("id")
-            if api_order_id is None:
-                # Fallback: try to get from root level
-                api_order_id = order_data.get("order_id")
+            api_order_id = order_info.get("order_id")
             api_message = order_data.get("message", "")
 
             # Store order in database
@@ -853,8 +850,7 @@ async def create_api_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 api_order = models.ApiPurchaseOrder(
                     user_id=update.effective_user.id,
                     api_order_id=api_order_id,
-                    game_code=game_code,
-                    game_name=game_name,
+                    api_game_code=game_code,
                     denomination_name=denom_name,
                     player_id=player_id,
                     player_name=order_info.get("player_name"),

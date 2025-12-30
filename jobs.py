@@ -1,4 +1,4 @@
-from telegram.ext import Application
+from telegram.ext import Application, ContextTypes
 from services.g2bulk_api import G2BulkAPI
 import models
 from common.lang_dicts import TEXTS, get_lang
@@ -8,20 +8,22 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-async def poll_api_orders_status(context):
+async def poll_api_orders_status(context: ContextTypes.DEFAULT_TYPE):
     """Poll API orders status and notify users when orders complete"""
     try:
         api = G2BulkAPI()
-        
+
         # Get all non-terminal orders
         with models.session_scope() as s:
             non_terminal_orders = (
                 s.query(models.ApiPurchaseOrder)
                 .filter(
-                    models.ApiPurchaseOrder.status.in_([
-                        models.ApiPurchaseOrderStatus.PENDING,
-                        models.ApiPurchaseOrderStatus.PROCESSING,
-                    ])
+                    models.ApiPurchaseOrder.status.in_(
+                        [
+                            models.ApiPurchaseOrderStatus.PENDING,
+                            models.ApiPurchaseOrderStatus.PROCESSING,
+                        ]
+                    )
                 )
                 .all()
             )
@@ -35,7 +37,7 @@ async def poll_api_orders_status(context):
                 try:
                     # Get order status from API
                     status_data = await api.get_order_status(
-                        order.api_order_id, order.game_code
+                        order.api_order_id, order.api_game.api_game_code
                     )
 
                     if not status_data.get("success"):
@@ -47,9 +49,7 @@ async def poll_api_orders_status(context):
                         order_info.get("status") or status_data.get("status") or ""
                     ).lower()
                     api_message = (
-                        status_data.get("message")
-                        or order_info.get("message")
-                        or ""
+                        status_data.get("message") or order_info.get("message") or ""
                     )
                     player_name = order_info.get("player_name")
 
@@ -73,9 +73,7 @@ async def poll_api_orders_status(context):
 
                     # Update order in database
                     with models.session_scope() as update_session:
-                        db_order = update_session.get(
-                            models.ApiPurchaseOrder, order.id
-                        )
+                        db_order = update_session.get(models.ApiPurchaseOrder, order.id)
                         if db_order:
                             db_order.status = new_status
                             if api_message:
@@ -102,13 +100,14 @@ async def poll_api_orders_status(context):
 
 
 async def notify_user_order_status(
-    context, order: models.ApiPurchaseOrder, old_status, new_status
+    context: ContextTypes.DEFAULT_TYPE,
+    order: models.ApiPurchaseOrder,
+    old_status,
+    new_status,
 ):
     """Notify user about order status change"""
     try:
         lang = get_lang(order.user_id)
-        app: Application = context.application
-
         # Build notification message
         if new_status == models.ApiPurchaseOrderStatus.COMPLETED:
             status_emoji = "✅"
@@ -133,7 +132,7 @@ async def notify_user_order_status(
 
         message = f"{status_emoji} {status_text}\n\n"
         message += f"<b>{TEXTS[lang].get('order_id', 'Order ID')}:</b> <code>{order.api_order_id}</code>\n"
-        message += f"<b>{TEXTS[lang].get('game', 'Game')}:</b> {escape_html(order.game_name)}\n"
+        message += f"<b>{TEXTS[lang].get('game', 'Game')}:</b> {escape_html(order.api_game.arabic_name if (lang == models.Language.ARABIC and order.api_game.arabic_name) else order.api_game.api_game_name)}\n"
         message += f"<b>{TEXTS[lang].get('denomination', 'Denomination')}:</b> {escape_html(order.denomination_name)}\n"
         message += f"<b>{TEXTS[lang].get('player_id', 'Player ID')}:</b> <code>{escape_html(order.player_id)}</code>\n"
 
@@ -142,12 +141,10 @@ async def notify_user_order_status(
 
         message += f"<b>{TEXTS[lang].get('price', 'Price')}:</b> <code>{format_float(order.price_sudan)} SDG</code>\n"
 
-        if order.api_message:
-            message += f"\n<b>{TEXTS[lang].get('message', 'Message')}:</b>\n<i>{escape_html(order.api_message)}</i>"
-
         # Send notification to user
-        await app.bot.send_message(
-            chat_id=order.user_id, text=message, parse_mode="HTML"
+        await context.bot.send_message(
+            chat_id=order.user_id,
+            text=message,
         )
 
         logger.info(
@@ -159,4 +156,3 @@ async def notify_user_order_status(
             f"Error notifying user {order.user_id} about order {order.id}: {str(e)}",
             exc_info=True,
         )
-

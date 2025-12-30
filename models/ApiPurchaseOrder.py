@@ -25,14 +25,19 @@ class ApiPurchaseOrder(Base):
     api_order_id = sa.Column(
         sa.Integer, nullable=False, unique=True
     )  # Order ID from G2Bulk API
-    game_code = sa.Column(sa.String, nullable=False)  # Game code from API
-    game_name = sa.Column(sa.String, nullable=False)  # Game name (display name)
+    api_game_code = sa.Column(
+        sa.String,
+        sa.ForeignKey("api_games.api_game_code", ondelete="SET NULL"),
+        nullable=False,
+    )
     denomination_name = sa.Column(sa.String, nullable=False)  # Denomination name
     player_id = sa.Column(sa.String, nullable=False)  # Player ID
     player_name = sa.Column(sa.String, nullable=True)  # Player name (from API)
     server_id = sa.Column(sa.String, nullable=True)  # Server ID if required
     price_usd = sa.Column(sa.Numeric(10, 2), nullable=False)  # Price in USD
-    price_sudan = sa.Column(sa.Numeric(10, 2), nullable=False)  # Price in Sudan currency
+    price_sudan = sa.Column(
+        sa.Numeric(10, 2), nullable=False
+    )  # Price in Sudan currency
     status = sa.Column(
         sa.Enum(ApiPurchaseOrderStatus),
         default=ApiPurchaseOrderStatus.PENDING,
@@ -45,6 +50,7 @@ class ApiPurchaseOrder(Base):
     updated_at = sa.Column(sa.DateTime, default=datetime.now, onupdate=datetime.now)
 
     user = relationship("User", back_populates="api_purchase_orders")
+    api_game = relationship("ApiGame", back_populates="api_purchase_orders")
 
     def __repr__(self):
         return (
@@ -68,7 +74,7 @@ class ApiPurchaseOrder(Base):
             f"<b>{texts.get('order_id', 'Order ID')}:</b> <code>{self.id}</code>",
             f"<b>{texts.get('api_order_id', 'API Order ID')}:</b> <code>{self.api_order_id}</code>",
             f"<b>{texts.get('order_status', 'Status')}:</b> {status_text}",
-            f"<b>{texts.get('game', 'Game')}:</b> {escape_html(self.game_name)}",
+            f"<b>{texts.get('game', 'Game')}:</b> {escape_html(self.api_game.api_game_name)}",
             f"<b>{texts.get('denomination', 'Denomination')}:</b> {escape_html(self.denomination_name)}",
             f"<b>{texts.get('player_id', 'Player ID')}:</b> <code>{escape_html(self.player_id)}</code>",
         ]
@@ -109,4 +115,3 @@ class ApiPurchaseOrder(Base):
             ApiPurchaseOrderStatus.FAILED,
             ApiPurchaseOrderStatus.CANCELLED,
         ]
-

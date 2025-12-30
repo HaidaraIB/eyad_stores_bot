@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy.orm import relationship
 from models.DB import Base
 from datetime import datetime
 import models
@@ -17,6 +18,8 @@ class ApiGame(Base):
 
     created_at = sa.Column(sa.DateTime, default=datetime.now)
     updated_at = sa.Column(sa.DateTime, default=datetime.now, onupdate=datetime.now)
+
+    api_purchase_orders = relationship("ApiPurchaseOrder", back_populates="api_game")
 
     def __str__(self):
         return f"{self.api_game_name} ({self.api_game_code})"
