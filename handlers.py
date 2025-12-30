@@ -49,6 +49,9 @@ def setup_and_run():
     app.add_handler(show_purchase_orders_handler)
     app.add_handler(view_charging_balance_order_handler)
     app.add_handler(view_purchase_order_handler)
+    app.add_handler(show_api_purchase_orders_handler)
+    app.add_handler(view_api_purchase_order_handler)
+    app.add_handler(back_to_api_purchase_orders_handler)
     app.add_handler(purchase_order_handler)
     app.add_handler(instant_purchase_handler)
     app.add_handler(charge_balance_handler)
@@ -140,5 +143,13 @@ def setup_and_run():
     app.add_handler(back_to_admin_home_page_handler)
 
     app.add_error_handler(error_handler)
+
+    # Schedule API orders polling job (every 30 seconds)
+    from jobs import poll_api_orders_status
+    app.job_queue.run_repeating(
+        poll_api_orders_status,
+        interval=30,  # Check every 30 seconds
+        first=10,  # Start after 10 seconds
+    )
 
     app.run_polling(allowed_updates=Update.ALL_TYPES)

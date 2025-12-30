@@ -10,5 +10,8 @@ from user.user_settings.handlers import (
     view_purchase_order_handler,
     back_to_charging_balance_orders_handler,
     back_to_purchase_orders_handler,
+    show_api_purchase_orders_handler,
+    view_api_purchase_order_handler,
+    back_to_api_purchase_orders_handler,
 )
 

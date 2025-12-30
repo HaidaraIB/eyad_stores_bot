@@ -278,6 +278,7 @@ TEXTS = {
         "no_orders": "لا توجد طلبات ❗️",
         "charging_balance_orders": "طلبات شحن الرصيد",
         "purchase_orders": "طلبات الشراء",
+        "api_purchase_orders": "طلبات الشراء من API ⚡",
         "order_details_text": "تفاصيل الطلب",
         "order_id": "رقم الطلب",
         "order_status": "حالة الطلب",
@@ -367,10 +368,10 @@ TEXTS = {
         "api_error": "حدث خطأ في الاتصال بالخدمة ❌",
         "order_details": (
             "تفاصيل الطلب:\n"
-            "اللعبة: {game_name}\n"
-            "الحزمة: {denomination}\n"
-            "السعر: {price} SDG\n"
-            "معرف اللاعب: {player_id}"
+            "اللعبة: <b>{game_name}</b>\n"
+            "الحزمة: <b>{denomination}</b>\n"
+            "السعر: <code>{price} SDG</code>\n"
+            "معرف اللاعب: <code>{player_id}</code>"
         ),
         "product_details": "تفاصيل المنتج 📦",
         "product_details_text": (
@@ -673,6 +674,7 @@ TEXTS = {
         "no_orders": "No orders ❗️",
         "charging_balance_orders": "Charging Balance Orders",
         "purchase_orders": "Purchase Orders",
+        "api_purchase_orders": "API Purchase Orders ⚡",
         "order_details_text": "Order Details",
         "order_id": "Order ID",
         "order_status": "Order Status",
@@ -764,13 +766,41 @@ TEXTS = {
         "no_filtered_games_available": "No games available. Please contact admin.",
         "game_not_available": "This game is not available",
         "no_denominations_available": "No denominations available for this game ❗️",
+        # API Purchase Order Statuses
+        "api_order_status_pending": "Pending",
+        "api_order_status_processing": "Processing",
+        "api_order_status_completed": "Completed",
+        "api_order_status_failed": "Failed",
+        "api_order_status_cancelled": "Cancelled",
+        "api_order_completed": "Your order has been completed successfully!",
+        "api_order_failed": "Your order has failed.",
+        "api_order_cancelled": "Your order has been cancelled.",
+        "api_order_id": "API Order ID",
+        "player_name": "Player Name",
+        "server_id": "Server ID",
+        "message": "Message",
+        "remark": "Remark",
+        # API Purchase Order Statuses
+        "api_order_status_pending": "قيد الانتظار",
+        "api_order_status_processing": "قيد المعالجة",
+        "api_order_status_completed": "مكتمل",
+        "api_order_status_failed": "فشل",
+        "api_order_status_cancelled": "ملغي",
+        "api_order_completed": "تم إكمال طلبك بنجاح!",
+        "api_order_failed": "فشل طلبك.",
+        "api_order_cancelled": "تم إلغاء طلبك.",
+        "api_order_id": "رقم الطلب من API",
+        "player_name": "اسم اللاعب",
+        "server_id": "معرف الخادم",
+        "message": "رسالة",
+        "remark": "ملاحظة",
         "api_error": "Error connecting to service ❌",
         "order_details": (
             "Order Details:\n"
             "Game: <b>{game_name}</b>\n"
             "Denomination: <b>{denomination}</b>\n"
             "Price: <code>{price}</code> SDG\n"
-            "Player ID: <b>{player_id}</b>"
+            "Player ID: <code>{player_id}</code>"
         ),
         "product_details": "Product Details 📦",
         "product_details_text": (

@@ -52,6 +52,12 @@ def build_order_type_keyboard(lang: models.Language):
                 text=BUTTONS[lang]["purchase_orders"],
                 callback_data="purchase_orders",
             )
+        ],
+        [
+            InlineKeyboardButton(
+                text=BUTTONS[lang].get("api_purchase_orders", "API Purchase Orders ⚡"),
+                callback_data="api_purchase_orders",
+            )
         ]
     ]
     return keyboard

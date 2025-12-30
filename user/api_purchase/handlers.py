@@ -52,7 +52,9 @@ async def instant_purchase(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             if not games:
                 await update.callback_query.answer(
-                    text=TEXTS[lang].get("no_games_available", "No games available at the moment ❗️"),
+                    text=TEXTS[lang].get(
+                        "no_games_available", "No games available at the moment ❗️"
+                    ),
                     show_alert=True,
                 )
                 return ConversationHandler.END
@@ -188,15 +190,14 @@ async def get_instant_purchase_game(update: Update, context: ContextTypes.DEFAUL
                     s.query(models.ApiGame)
                     .filter(
                         models.ApiGame.api_game_code == game_code,
-                        models.ApiGame.is_active == True
+                        models.ApiGame.is_active == True,
                     )
                     .first()
                 )
                 if not api_game:
                     await update.callback_query.answer(
                         text=TEXTS[lang].get(
-                            "game_not_available",
-                            "This game is not available"
+                            "game_not_available", "This game is not available"
                         ),
                         show_alert=True,
                     )
@@ -233,7 +234,7 @@ async def get_instant_purchase_game(update: Update, context: ContextTypes.DEFAUL
                     s.query(models.ApiGame)
                     .filter(
                         models.ApiGame.api_game_code == game_code,
-                        models.ApiGame.is_active == True
+                        models.ApiGame.is_active == True,
                     )
                     .first()
                 )
@@ -241,7 +242,7 @@ async def get_instant_purchase_game(update: Update, context: ContextTypes.DEFAUL
                     display_name = api_game.get_display_name(lang)
                 else:
                     display_name = default_name
-            
+
             # Store game info in context
             context.user_data["api_game_name"] = display_name
             context.user_data["api_catalogues"] = catalogues
@@ -282,10 +283,10 @@ def search_games(games: list, query: str, lang: models.Language = None) -> list:
     for game in games:
         game_name = game.get("name", "").lower()
         game_code = game.get("code", "").lower()
-        
+
         # Check if query matches original game name or code
         matches = query_lower in game_name or query_lower in game_code
-        
+
         # Also check Arabic name if available
         if not matches and lang and game_code in api_games_dict:
             api_game = api_games_dict[game_code]
@@ -340,26 +341,25 @@ async def handle_game_search(update: Update, context: ContextTypes.DEFAULT_TYPE)
             # Single result - proceed directly
             game = search_results[0]
             game_code = game.get("code")
-            
+
             # Validate that the game is an active filtered game
             with models.session_scope() as s:
                 api_game = (
                     s.query(models.ApiGame)
                     .filter(
                         models.ApiGame.api_game_code == game_code,
-                        models.ApiGame.is_active == True
+                        models.ApiGame.is_active == True,
                     )
                     .first()
                 )
                 if not api_game:
                     await update.message.reply_text(
                         text=TEXTS[lang].get(
-                            "game_not_available",
-                            "This game is not available"
+                            "game_not_available", "This game is not available"
                         ),
                     )
                     return INSTANT_PURCHASE_GAME
-            
+
             context.user_data["api_game_code"] = game_code
 
             try:
@@ -841,7 +841,32 @@ async def create_api_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return ConversationHandler.END
 
         if order_data.get("success"):
-            order_id = order_data.get("order", {}).get("id", "N/A")
+            order_info = order_data.get("order", {})
+            api_order_id = order_info.get("id")
+            if api_order_id is None:
+                # Fallback: try to get from root level
+                api_order_id = order_data.get("order_id")
+            api_message = order_data.get("message", "")
+
+            # Store order in database
+            with models.session_scope() as s:
+                api_order = models.ApiPurchaseOrder(
+                    user_id=update.effective_user.id,
+                    api_order_id=api_order_id,
+                    game_code=game_code,
+                    game_name=game_name,
+                    denomination_name=denom_name,
+                    player_id=player_id,
+                    player_name=order_info.get("player_name"),
+                    server_id=server_id,
+                    price_usd=denom_price_usd,
+                    price_sudan=denom_price_sudan,
+                    status=models.ApiPurchaseOrderStatus.PENDING,
+                    api_message=api_message,
+                    remark=f"Order from Telegram Bot - User ID: {update.effective_user.id}",
+                )
+                s.add(api_order)
+                s.commit()
 
             # Show success message
             order_text = (
@@ -850,18 +875,24 @@ async def create_api_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "order_created_success",
                     "Order created successfully ✅\nOrder ID: {order_id}",
                 )
-                .format(order_id=order_id)
+                .format(order_id=api_order_id)
             )
             order_details = (
                 TEXTS[lang]
                 .get(
                     "order_details",
-                    "Order Details:\nGame: {game_name}\nDenomination: {denomination}\nPrice: {price}\nPlayer ID: {player_id}",
+                    (
+                        "Order Details:\n"
+                        "Game: {game_name}\n"
+                        "Denomination: {denomination}\n"
+                        "Price: {price}\n"
+                        "Player ID: {player_id}"
+                    ),
                 )
                 .format(
                     game_name=escape_html(game_name),
                     denomination=escape_html(denom_name),
-                    price=f"{format_float(denom_price_sudan)} SDG",
+                    price=format_float(denom_price_sudan),
                     player_id=escape_html(player_id),
                 )
             )

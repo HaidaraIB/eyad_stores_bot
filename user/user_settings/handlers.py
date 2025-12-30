@@ -184,22 +184,15 @@ async def get_charge_balance_payment_method(
         return CHARGE_BALANCE_PAYMENT_ADDRESS
 
 
-back_to_charge_balance_amount = charge_balance
+back_to_charge_balance_pm = charge_balance
 
 
 async def get_charge_balance_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
-        try:
+        if update.message:
             amount = float(update.message.text.strip())
-            if amount <= 0:
-                raise ValueError()
             context.user_data["charge_balance_amount"] = amount
-        except ValueError:
-            await update.message.reply_text(
-                text=TEXTS[lang]["invalid_amount"],
-            )
-            return CHARGE_BALANCE_AMOUNT
 
         with models.session_scope() as s:
             payment_methods = (
@@ -225,15 +218,21 @@ async def get_charge_balance_amount(update: Update, context: ContextTypes.DEFAUL
             pm_keyboard.append(
                 build_back_to_home_page_button(lang=lang, is_admin=False)[0]
             )
+            if update.message:
+                await update.message.reply_text(
+                    text=TEXTS[lang]["select_payment_method"],
+                    reply_markup=InlineKeyboardMarkup(pm_keyboard),
+                )
+            else:
+                await update.callback_query.edit_message_text(
+                    text=TEXTS[lang]["select_payment_method"],
+                    reply_markup=InlineKeyboardMarkup(pm_keyboard),
+                )
 
-            await update.message.reply_text(
-                text=TEXTS[lang]["select_payment_method"],
-                reply_markup=InlineKeyboardMarkup(pm_keyboard),
-            )
         return CHARGE_BALANCE_PAYMENT_METHOD
 
 
-back_to_charge_balance_pm = get_charge_balance_amount
+back_to_charge_balance_amount = get_charge_balance_payment_method
 
 
 async def get_charge_balance_payment_address(
@@ -287,7 +286,7 @@ async def get_charge_balance_payment_address(
         return CHARGE_BALANCE_PROOF
 
 
-back_to_charge_balance_addr = get_charge_balance_payment_method
+back_to_charge_balance_addr = get_charge_balance_amount
 
 
 async def get_charge_balance_proof(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -405,7 +404,7 @@ charge_balance_handler = ConversationHandler(
         CHARGE_BALANCE_AMOUNT: [
             MessageHandler(
                 callback=get_charge_balance_amount,
-                filters=filters.TEXT & ~filters.COMMAND,
+                filters=filters.Regex("^[0-9]+\.?[0-9]*$"),
             ),
         ],
         CHARGE_BALANCE_PAYMENT_METHOD: [
@@ -642,4 +641,98 @@ view_charging_balance_order_handler = CallbackQueryHandler(
 view_purchase_order_handler = CallbackQueryHandler(
     view_purchase_order,
     r"^view_purchase_order_\d+$",
+)
+
+
+async def show_api_purchase_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if PrivateChat().filter(update):
+        lang = get_lang(update.effective_user.id)
+        with models.session_scope() as s:
+            orders = (
+                s.query(models.ApiPurchaseOrder)
+                .filter(models.ApiPurchaseOrder.user_id == update.effective_user.id)
+                .order_by(models.ApiPurchaseOrder.created_at.desc())
+                .limit(10)
+                .all()
+            )
+
+            if not orders:
+                await update.callback_query.answer(
+                    text=TEXTS[lang]["no_orders"],
+                    show_alert=True,
+                )
+                return
+
+            # Build keyboard with 3 columns
+            order_texts = []
+            order_data = []
+            for order in orders:
+                status_text = TEXTS[lang].get(
+                    f"api_order_status_{order.status.value}", order.status.value
+                )
+                order_text = f"#{order.id} - {escape_html(order.game_name[:15])} - {status_text}"
+                order_texts.append(order_text)
+                order_data.append(f"view_api_purchase_order_{order.id}")
+
+            order_keyboard = build_keyboard(
+                columns=3,
+                texts=order_texts,
+                buttons_data=order_data,
+            )
+            order_keyboard.append(build_back_button("back_to_my_orders", lang=lang))
+            order_keyboard.append(
+                build_back_to_home_page_button(lang=lang, is_admin=False)[0]
+            )
+
+            text = f"<b>{TEXTS[lang].get('api_purchase_orders', 'API Purchase Orders ⚡')}</b>\n\n{TEXTS[lang].get('select_order', 'Select an order to view:')}"
+            await update.callback_query.edit_message_text(
+                text=text,
+                reply_markup=InlineKeyboardMarkup(order_keyboard),
+            )
+
+
+async def view_api_purchase_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if PrivateChat().filter(update):
+        lang = get_lang(update.effective_user.id)
+        order_id = int(update.callback_query.data.replace("view_api_purchase_order_", ""))
+
+        with models.session_scope() as s:
+            order = s.get(models.ApiPurchaseOrder, order_id)
+            if not order or order.user_id != update.effective_user.id:
+                await update.callback_query.answer(
+                    text=TEXTS[lang]["order_not_found"],
+                    show_alert=True,
+                )
+                return
+
+            # Use stringify method to build order details text
+            text = order.stringify(lang)
+
+            back_buttons = [
+                build_back_button("back_to_api_purchase_orders", lang=lang),
+                build_back_to_home_page_button(lang=lang, is_admin=False)[0],
+            ]
+
+            await update.callback_query.edit_message_text(
+                text=text,
+                reply_markup=InlineKeyboardMarkup(back_buttons),
+            )
+
+
+back_to_api_purchase_orders = show_api_purchase_orders
+
+
+back_to_api_purchase_orders_handler = CallbackQueryHandler(
+    back_to_api_purchase_orders,
+    r"^back_to_api_purchase_orders$",
+)
+
+show_api_purchase_orders_handler = CallbackQueryHandler(
+    show_api_purchase_orders,
+    "^api_purchase_orders$",
+)
+
+view_api_purchase_order_handler = CallbackQueryHandler(
+    view_api_purchase_order,
+    r"^view_api_purchase_order_\d+$",
 )

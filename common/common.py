@@ -55,9 +55,7 @@ def get_exchange_rate():
         settings = session.query(models.GeneralSettings).first()
         if settings:
             return settings.usd_to_sudan_rate
-        else:
-            # Create default settings if not exists
-            settings = models.GeneralSettings()
-            session.add(settings)
-            session.commit()
-            return 1.0
+        # Create default settings if not exists
+        settings = models.GeneralSettings()
+        session.add(settings)
+    return 1.0

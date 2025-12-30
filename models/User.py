@@ -21,6 +21,7 @@ class User(Base):
 
     charging_balance_orders = relationship("ChargingBalanceOrder", back_populates="user")
     purchase_orders = relationship("PurchaseOrder", back_populates="user")
+    api_purchase_orders = relationship("ApiPurchaseOrder", back_populates="user")
     
 
     def __str__(self):
