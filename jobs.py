@@ -4,6 +4,7 @@ import models
 from common.lang_dicts import TEXTS, get_lang
 from common.common import escape_html, format_float
 import logging
+from Config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -144,6 +145,10 @@ async def notify_user_order_status(
         # Send notification to user
         await context.bot.send_message(
             chat_id=order.user_id,
+            text=message,
+        )
+        await context.bot.send_message(
+            chat_id=Config.ARCHIVE_CHANNEL,
             text=message,
         )
 

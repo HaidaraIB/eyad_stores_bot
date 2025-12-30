@@ -10,6 +10,7 @@ class Config:
     BOT_TOKEN = os.getenv("BOT_TOKEN")
     OWNER_ID = int(os.getenv("OWNER_ID"))
     ERRORS_CHANNEL = int(os.getenv("ERRORS_CHANNEL"))
+    ARCHIVE_CHANNEL = int(os.getenv("ARCHIVE_CHANNEL"))
 
     G2BULK_API_KEY = os.getenv("G2BULK_API_KEY")
 

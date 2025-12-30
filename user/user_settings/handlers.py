@@ -10,6 +10,8 @@ from user.user_settings.keyboards import (
     build_settings_keyboard,
     build_profile_keyboard,
     build_order_type_keyboard,
+    build_user_orders_list_keyboard,
+    ORDERS_PER_PAGE,
 )
 from common.keyboards import (
     build_back_to_home_page_button,
@@ -462,93 +464,100 @@ my_orders_handler = CallbackQueryHandler(
 
 
 async def show_charging_balance_orders(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
+    update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0
 ):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
         with models.session_scope() as s:
-            orders = (
+            # Get total count for this user
+            total_count = (
                 s.query(models.ChargingBalanceOrder)
                 .filter(models.ChargingBalanceOrder.user_id == update.effective_user.id)
-                .order_by(models.ChargingBalanceOrder.created_at.desc())
-                .limit(10)
-                .all()
+                .count()
             )
-
-            if not orders:
+            
+            if total_count == 0:
                 await update.callback_query.answer(
                     text=TEXTS[lang]["no_orders"],
                     show_alert=True,
                 )
                 return
 
-            # Build keyboard with 3 columns
-            order_texts = []
-            order_data = []
-            for order in orders:
-                order_text = f"#{order.id} - {format_float(order.amount)}"
-                order_texts.append(order_text)
-                order_data.append(f"view_charge_order_{order.id}")
+            # Calculate pagination
+            total_pages = (total_count + ORDERS_PER_PAGE - 1) // ORDERS_PER_PAGE
+            page = max(0, min(page, total_pages - 1))
+            offset = page * ORDERS_PER_PAGE
 
-            order_keyboard = build_keyboard(
-                columns=3,
-                texts=order_texts,
-                buttons_data=order_data,
+            orders = (
+                s.query(models.ChargingBalanceOrder)
+                .filter(models.ChargingBalanceOrder.user_id == update.effective_user.id)
+                .order_by(models.ChargingBalanceOrder.created_at.desc())
+                .offset(offset)
+                .limit(ORDERS_PER_PAGE)
+                .all()
             )
-            order_keyboard.append(build_back_button("back_to_my_orders", lang=lang))
-            order_keyboard.append(
-                build_back_to_home_page_button(lang=lang, is_admin=False)[0]
+
+            keyboard = build_user_orders_list_keyboard(
+                orders=orders,
+                lang=lang,
+                page=page,
+                total_pages=total_pages,
+                callback_prefix="view_charge_order_",
+                back_callback="back_to_my_orders",
             )
 
             text = f"<b>{TEXTS[lang]['charging_balance_orders']}</b>\n\n{TEXTS[lang].get('select_order', 'Select an order to view:')}"
             await update.callback_query.edit_message_text(
                 text=text,
-                reply_markup=InlineKeyboardMarkup(order_keyboard),
+                reply_markup=keyboard,
             )
 
 
-async def show_purchase_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def show_purchase_orders(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
         with models.session_scope() as s:
-            orders = (
+            # Get total count for this user
+            total_count = (
                 s.query(models.PurchaseOrder)
                 .filter(models.PurchaseOrder.user_id == update.effective_user.id)
-                .order_by(models.PurchaseOrder.created_at.desc())
-                .limit(10)
-                .all()
+                .count()
             )
-
-            if not orders:
+            
+            if total_count == 0:
                 await update.callback_query.answer(
                     text=TEXTS[lang]["no_orders"],
                     show_alert=True,
                 )
                 return
 
-            # Build keyboard with 3 columns
-            order_texts = []
-            order_data = []
-            for order in orders:
-                item_name = order.item.name if order.item else "N/A"
-                order_text = f"#{order.id} - {escape_html(item_name[:15])}"
-                order_texts.append(order_text)
-                order_data.append(f"view_purchase_order_{order.id}")
+            # Calculate pagination
+            total_pages = (total_count + ORDERS_PER_PAGE - 1) // ORDERS_PER_PAGE
+            page = max(0, min(page, total_pages - 1))
+            offset = page * ORDERS_PER_PAGE
 
-            order_keyboard = build_keyboard(
-                columns=3,
-                texts=order_texts,
-                buttons_data=order_data,
+            orders = (
+                s.query(models.PurchaseOrder)
+                .filter(models.PurchaseOrder.user_id == update.effective_user.id)
+                .order_by(models.PurchaseOrder.created_at.desc())
+                .offset(offset)
+                .limit(ORDERS_PER_PAGE)
+                .all()
             )
-            order_keyboard.append(build_back_button("back_to_my_orders", lang=lang))
-            order_keyboard.append(
-                build_back_to_home_page_button(lang=lang, is_admin=False)[0]
+
+            keyboard = build_user_orders_list_keyboard(
+                orders=orders,
+                lang=lang,
+                page=page,
+                total_pages=total_pages,
+                callback_prefix="view_purchase_order_",
+                back_callback="back_to_my_orders",
             )
 
             text = f"<b>{TEXTS[lang]['purchase_orders']}</b>\n\n{TEXTS[lang].get('select_order', 'Select an order to view:')}"
             await update.callback_query.edit_message_text(
                 text=text,
-                reply_markup=InlineKeyboardMarkup(order_keyboard),
+                reply_markup=keyboard,
             )
 
 
@@ -623,14 +632,63 @@ back_to_purchase_orders_handler = CallbackQueryHandler(
     r"^back_to_purchase_orders$",
 )
 
+async def handle_charging_balance_orders_pagination(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
+    """Handle pagination for user charging balance orders"""
+    if PrivateChat().filter(update):
+        data = update.callback_query.data
+        if data == "page_info":
+            await update.callback_query.answer()
+            return
+        page = int(data.replace("page_charge_order_", ""))
+        await show_charging_balance_orders(update, context, page=page)
+
+
+async def handle_purchase_orders_pagination(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
+    """Handle pagination for user purchase orders"""
+    if PrivateChat().filter(update):
+        data = update.callback_query.data
+        if data == "page_info":
+            await update.callback_query.answer()
+            return
+        page = int(data.replace("page_purchase_order_", ""))
+        await show_purchase_orders(update, context, page=page)
+
+
+async def handle_api_purchase_orders_pagination(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
+    """Handle pagination for user API purchase orders"""
+    if PrivateChat().filter(update):
+        data = update.callback_query.data
+        if data == "page_info":
+            await update.callback_query.answer()
+            return
+        page = int(data.replace("page_api_purchase_order_", ""))
+        await show_api_purchase_orders(update, context, page=page)
+
+
 show_charging_balance_orders_handler = CallbackQueryHandler(
     show_charging_balance_orders,
     "^charging_balance_orders$",
 )
 
+charging_balance_orders_pagination_handler = CallbackQueryHandler(
+    handle_charging_balance_orders_pagination,
+    r"^page_charge_order_\d+$|^page_info$",
+)
+
 show_purchase_orders_handler = CallbackQueryHandler(
     show_purchase_orders,
     "^purchase_orders$",
+)
+
+purchase_orders_pagination_handler = CallbackQueryHandler(
+    handle_purchase_orders_pagination,
+    r"^page_purchase_order_\d+$|^page_info$",
 )
 
 view_charging_balance_order_handler = CallbackQueryHandler(
@@ -644,50 +702,51 @@ view_purchase_order_handler = CallbackQueryHandler(
 )
 
 
-async def show_api_purchase_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def show_api_purchase_orders(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
         with models.session_scope() as s:
-            orders = (
+            # Get total count for this user
+            total_count = (
                 s.query(models.ApiPurchaseOrder)
                 .filter(models.ApiPurchaseOrder.user_id == update.effective_user.id)
-                .order_by(models.ApiPurchaseOrder.created_at.desc())
-                .limit(10)
-                .all()
+                .count()
             )
-
-            if not orders:
+            
+            if total_count == 0:
                 await update.callback_query.answer(
                     text=TEXTS[lang]["no_orders"],
                     show_alert=True,
                 )
                 return
 
-            # Build keyboard with 3 columns
-            order_texts = []
-            order_data = []
-            for order in orders:
-                status_text = TEXTS[lang].get(
-                    f"api_order_status_{order.status.value}", order.status.value
-                )
-                order_text = f"#{order.id} - {escape_html(order.api_game.api_game_name[:15])} - {status_text}"
-                order_texts.append(order_text)
-                order_data.append(f"view_api_purchase_order_{order.id}")
+            # Calculate pagination
+            total_pages = (total_count + ORDERS_PER_PAGE - 1) // ORDERS_PER_PAGE
+            page = max(0, min(page, total_pages - 1))
+            offset = page * ORDERS_PER_PAGE
 
-            order_keyboard = build_keyboard(
-                columns=3,
-                texts=order_texts,
-                buttons_data=order_data,
+            orders = (
+                s.query(models.ApiPurchaseOrder)
+                .filter(models.ApiPurchaseOrder.user_id == update.effective_user.id)
+                .order_by(models.ApiPurchaseOrder.created_at.desc())
+                .offset(offset)
+                .limit(ORDERS_PER_PAGE)
+                .all()
             )
-            order_keyboard.append(build_back_button("back_to_my_orders", lang=lang))
-            order_keyboard.append(
-                build_back_to_home_page_button(lang=lang, is_admin=False)[0]
+
+            keyboard = build_user_orders_list_keyboard(
+                orders=orders,
+                lang=lang,
+                page=page,
+                total_pages=total_pages,
+                callback_prefix="view_api_purchase_order_",
+                back_callback="back_to_my_orders",
             )
 
             text = f"<b>{TEXTS[lang].get('api_purchase_orders', 'API Purchase Orders ⚡')}</b>\n\n{TEXTS[lang].get('select_order', 'Select an order to view:')}"
             await update.callback_query.edit_message_text(
                 text=text,
-                reply_markup=InlineKeyboardMarkup(order_keyboard),
+                reply_markup=keyboard,
             )
 
 
@@ -735,4 +794,9 @@ show_api_purchase_orders_handler = CallbackQueryHandler(
 view_api_purchase_order_handler = CallbackQueryHandler(
     view_api_purchase_order,
     r"^view_api_purchase_order_\d+$",
+)
+
+api_purchase_orders_pagination_handler = CallbackQueryHandler(
+    handle_api_purchase_orders_pagination,
+    r"^page_api_purchase_order_\d+$|^page_info$",
 )

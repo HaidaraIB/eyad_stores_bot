@@ -1,7 +1,9 @@
 from admin.orders_settings.handlers import (
     orders_settings_handler,
     show_charging_balance_orders_admin_handler,
+    charging_balance_orders_pagination_handler,
     show_purchase_orders_admin_handler,
+    purchase_orders_pagination_handler,
     view_charging_balance_order_admin_handler,
     view_purchase_order_admin_handler,
     update_order_status_handler,
@@ -13,12 +15,18 @@ from admin.orders_settings.handlers import (
     back_to_admin_purchase_orders_handler,
     request_charging_order_handler,
     request_purchase_order_handler,
+    show_api_purchase_orders_admin_handler,
+    view_api_purchase_order_admin_handler,
+    api_purchase_orders_pagination_handler,
+    back_to_api_purchase_orders_admin_handler,
 )
 
 __all__ = [
     "orders_settings_handler",
     "show_charging_balance_orders_admin_handler",
+    "charging_balance_orders_pagination_handler",
     "show_purchase_orders_admin_handler",
+    "purchase_orders_pagination_handler",
     "view_charging_balance_order_admin_handler",
     "view_purchase_order_admin_handler",
     "update_order_status_handler",
@@ -30,4 +38,8 @@ __all__ = [
     "back_to_admin_purchase_orders_handler",
     "request_charging_order_handler",
     "request_purchase_order_handler",
+    "show_api_purchase_orders_admin_handler",
+    "view_api_purchase_order_admin_handler",
+    "api_purchase_orders_pagination_handler",
+    "back_to_api_purchase_orders_admin_handler",
 ]

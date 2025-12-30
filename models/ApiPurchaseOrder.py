@@ -67,6 +67,9 @@ class ApiPurchaseOrder(Base):
         status_text = texts.get(
             f"api_order_status_{self.status.value}", self.status.value
         )
+        game_display_name = (
+            self.api_game.get_display_name(lang) if self.api_game else "N/A"
+        )
 
         lines = [
             f"<b>{texts.get('order_details_text', 'Order Details')}</b>",
@@ -74,7 +77,7 @@ class ApiPurchaseOrder(Base):
             f"<b>{texts.get('order_id', 'Order ID')}:</b> <code>{self.id}</code>",
             f"<b>{texts.get('api_order_id', 'API Order ID')}:</b> <code>{self.api_order_id}</code>",
             f"<b>{texts.get('order_status', 'Status')}:</b> {status_text}",
-            f"<b>{texts.get('game', 'Game')}:</b> {escape_html(self.api_game.api_game_name)}",
+            f"<b>{texts.get('game', 'Game')}:</b> {escape_html(game_display_name)}",
             f"<b>{texts.get('denomination', 'Denomination')}:</b> {escape_html(self.denomination_name)}",
             f"<b>{texts.get('player_id', 'Player ID')}:</b> <code>{escape_html(self.player_id)}</code>",
         ]
