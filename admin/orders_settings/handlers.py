@@ -1,7 +1,4 @@
-from telegram import (
-    Update,
-    InlineKeyboardMarkup,
-)
+from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import (
     ContextTypes,
     ConversationHandler,
@@ -192,7 +189,7 @@ async def show_charging_balance_orders_admin(
         with models.session_scope() as s:
             # Get total count
             total_count = s.query(models.ChargingBalanceOrder).count()
-            
+
             if total_count == 0:
                 await update.callback_query.answer(
                     text=TEXTS[lang]["no_orders"],
@@ -266,7 +263,7 @@ async def show_purchase_orders_admin(
         with models.session_scope() as s:
             # Get total count
             total_count = s.query(models.PurchaseOrder).count()
-            
+
             if total_count == 0:
                 await update.callback_query.answer(
                     text=TEXTS[lang]["no_orders"],
@@ -341,7 +338,7 @@ async def show_api_purchase_orders_admin(
         with models.session_scope() as s:
             # Get total count
             total_count = s.query(models.ApiPurchaseOrder).count()
-            
+
             if total_count == 0:
                 await update.callback_query.answer(
                     text=TEXTS[lang]["no_orders"],
@@ -387,7 +384,9 @@ async def view_api_purchase_order_admin(
         models.Permission.MANAGE_ORDERS
     ).filter(update):
         lang = get_lang(update.effective_user.id)
-        order_id = int(update.callback_query.data.replace("admin_view_api_purchase_order_", ""))
+        order_id = int(
+            update.callback_query.data.replace("admin_view_api_purchase_order_", "")
+        )
 
         with models.session_scope() as s:
             order = s.get(models.ApiPurchaseOrder, order_id)

@@ -1,6 +1,7 @@
-from telegram.ext import Application, ContextTypes
+from telegram.ext import ContextTypes
 from services.g2bulk_api import G2BulkAPI
 import models
+from sqlalchemy.orm import Session
 from common.lang_dicts import TEXTS, get_lang
 from common.common import escape_html, format_float
 import logging
@@ -86,7 +87,7 @@ async def poll_api_orders_status(context: ContextTypes.DEFAULT_TYPE):
                             # Notify user if status changed to terminal state
                             if status_changed and db_order.is_terminal():
                                 await notify_user_order_status(
-                                    context, db_order, old_status, new_status
+                                    context, db_order, old_status, new_status, s
                                 )
 
                 except Exception as e:
@@ -105,6 +106,7 @@ async def notify_user_order_status(
     order: models.ApiPurchaseOrder,
     old_status,
     new_status,
+    s: Session,
 ):
     """Notify user about order status change"""
     try:
@@ -147,9 +149,15 @@ async def notify_user_order_status(
             chat_id=order.user_id,
             text=message,
         )
+        user = s.get(models.User, order.user_id)
         await context.bot.send_message(
             chat_id=Config.ARCHIVE_CHANNEL,
-            text=message,
+            text=(
+                message
+                + "\n\n"
+                + f"<i>{TEXTS[lang].get("order_user_info", "Order's user info")}:</i>\n\n"
+                + user.stringify(lang)
+            ),
         )
 
         logger.info(

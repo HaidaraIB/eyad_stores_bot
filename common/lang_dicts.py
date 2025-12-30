@@ -412,6 +412,7 @@ TEXTS = {
         "filtered_games_list_info": "🟢 = نشط\n🔴 = غير نشط",
         "no_filtered_games": "لا توجد ألعاب مصفاة. يرجى تصفية الألعاب من API أولاً.",
         "game_not_found": "اللعبة غير موجودة",
+        "order_user_info": "معلومات صاحب الطلب",
     },
     models.Language.ENGLISH: {
         "user_welcome_msg": "Welcome {name}",
@@ -829,6 +830,7 @@ TEXTS = {
         "filtered_games_list_info": "🟢 = Active\n🔴 = Inactive",
         "no_filtered_games": "No filtered games found. Please filter games from API first.",
         "game_not_found": "Game not found",
+        "order_user_info": "Order's user info",
     },
 }
 
