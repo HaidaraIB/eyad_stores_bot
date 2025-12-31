@@ -37,6 +37,12 @@ def build_user_keyboard(lang: models.Language):
                 callback_data="user_settings",
             ),
         ],
+        [
+            InlineKeyboardButton(
+                text=BUTTONS[lang]["support"],
+                url=f"tg://user?id={Config.OWNER_ID}",
+            ),
+        ],
     ]
     return InlineKeyboardMarkup(keyboard)
 

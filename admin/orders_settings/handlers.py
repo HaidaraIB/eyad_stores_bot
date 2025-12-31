@@ -889,6 +889,7 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     models.PurchaseOrderStatus.COMPLETED,
                     models.PurchaseOrderStatus.FAILED,
                     models.PurchaseOrderStatus.CANCELLED,
+                    models.PurchaseOrderStatus.REFUNDED
                 ]
 
             # If terminal and status changed, archive the order and delete the bot message
@@ -1033,13 +1034,6 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # If order message was deleted (terminal status), redirect to orders list
         if is_terminal:
-            order_type_for_redirect = context.user_data.get("editing_order_type")
-            if order_type_for_redirect == "charging":
-                # Redirect to charging orders list
-                await show_charging_balance_orders_admin(update, context, page=0)
-            else:
-                # Redirect to purchase orders list
-                await show_purchase_orders_admin(update, context, page=0)
             return
 
         # Return to order view by directly calling the view function

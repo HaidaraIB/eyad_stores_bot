@@ -1010,6 +1010,7 @@ BUTTONS = {
         "request_purchase_order": "طلب شراء ⚡",
         "api_purchase_orders": "طلبات الشراء الفورية ⚡",
         "edit_amount": "تعديل المبلغ",
+        "support": "الدعم 💬",
     },
     models.Language.ENGLISH: {
         "check_joined": "Verify ✅",
@@ -1120,6 +1121,7 @@ BUTTONS = {
         "manage_filtered_games": "Manage Filtered Games 📋",
         "api_purchase_orders": "Instant Purchase Orders ⚡",
         "edit_amount": "Edit Amount",
+        "support": "Support 💬",
     },
 }
 
