@@ -889,7 +889,7 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     models.PurchaseOrderStatus.COMPLETED,
                     models.PurchaseOrderStatus.FAILED,
                     models.PurchaseOrderStatus.CANCELLED,
-                    models.PurchaseOrderStatus.REFUNDED
+                    models.PurchaseOrderStatus.REFUNDED,
                 ]
 
             # If terminal and status changed, archive the order and delete the bot message
@@ -982,18 +982,6 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             exc_info=True,
                         )
 
-                    # Delete the bot message (not the order from database)
-                    try:
-                        await update.callback_query.delete_message()
-                        logger.info(
-                            f"Deleted bot message for {order_type} order {order_id}"
-                        )
-                    except Exception as e:
-                        logger.error(
-                            f"Error deleting bot message for {order_type} order {order_id}: {str(e)}",
-                            exc_info=True,
-                        )
-
             await update.callback_query.answer(
                 text=TEXTS[lang].get("order_status_updated", "Order status updated ✅"),
                 show_alert=True,
@@ -1007,8 +995,9 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
 
                 from common.common import get_status_emoji
+
                 status_emoji = get_status_emoji(new_status)
-                
+
                 if order_type == "charging":
                     notification_text = TEXTS[user_lang].get(
                         "charging_order_status_changed",
@@ -1034,6 +1023,15 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # If order message was deleted (terminal status), redirect to orders list
         if is_terminal:
+            # Delete the bot message (not the order from database)
+            try:
+                await update.callback_query.delete_message()
+                logger.info(f"Deleted bot message for {order_type} order {order_id}")
+            except Exception as e:
+                logger.error(
+                    f"Error deleting bot message for {order_type} order {order_id}: {str(e)}",
+                    exc_info=True,
+                )
             return
 
         # Return to order view by directly calling the view function
