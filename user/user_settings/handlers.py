@@ -645,7 +645,6 @@ async def show_charging_balance_orders(
                         chat_id=update.effective_chat.id,
                         text=text,
                         reply_markup=keyboard,
-                        parse_mode="HTML",
                     )
                 except:
                     # If delete fails, try editing caption (will fail but we try)
@@ -760,7 +759,6 @@ async def view_charging_balance_order(
                                 photo=order.payment_proof,
                                 caption=text,
                                 reply_markup=keyboard,
-                                parse_mode="HTML",
                             )
                         except:
                             # If photo fails, try document
@@ -770,7 +768,6 @@ async def view_charging_balance_order(
                                     document=order.payment_proof,
                                     caption=text,
                                     reply_markup=keyboard,
-                                    parse_mode="HTML",
                                 )
                             except:
                                 # Fallback to text message
@@ -778,7 +775,6 @@ async def view_charging_balance_order(
                                     chat_id=update.effective_chat.id,
                                     text=text,
                                     reply_markup=keyboard,
-                                    parse_mode="HTML",
                                 )
                 else:
                     # Message doesn't have photo, need to replace with photo
@@ -789,7 +785,6 @@ async def view_charging_balance_order(
                             photo=order.payment_proof,
                             caption=text,
                             reply_markup=keyboard,
-                            parse_mode="HTML",
                         )
                     except:
                         # If photo fails, try document
@@ -799,7 +794,6 @@ async def view_charging_balance_order(
                                 document=order.payment_proof,
                                 caption=text,
                                 reply_markup=keyboard,
-                                parse_mode="HTML",
                             )
                         except:
                             # Fallback to text message
@@ -823,7 +817,6 @@ async def view_charging_balance_order(
                             chat_id=update.effective_chat.id,
                             text=text,
                             reply_markup=keyboard,
-                            parse_mode="HTML",
                         )
                     except:
                         # If delete fails, try editing caption (will fail but we try)

@@ -943,7 +943,6 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                         chat_id=archive_channel,
                                         photo=order_for_archive.payment_proof,
                                         caption=archive_text,
-                                        parse_mode="HTML",
                                     )
                                 except:
                                     try:
@@ -951,26 +950,22 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                             chat_id=archive_channel,
                                             document=order_for_archive.payment_proof,
                                             caption=archive_text,
-                                            parse_mode="HTML",
                                         )
                                     except:
                                         await context.bot.send_message(
                                             chat_id=archive_channel,
                                             text=archive_text,
-                                            parse_mode="HTML",
                                         )
                             else:
                                 await context.bot.send_message(
                                     chat_id=archive_channel,
                                     text=archive_text,
-                                    parse_mode="HTML",
                                 )
                         else:
                             archive_channel = Config.MANUAL_PURCHASES_ARCHIVE_CHANNEL
                             await context.bot.send_message(
                                 chat_id=archive_channel,
                                 text=archive_text,
-                                parse_mode="HTML",
                             )
 
                         logger.info(
@@ -1440,7 +1435,6 @@ async def get_order_notes_from_reply(
                 photo=order.payment_proof,
                 caption=text,
                 reply_markup=keyboard,
-                parse_mode="HTML",
             )
         except:
             # If photo fails, try document
@@ -1450,7 +1444,6 @@ async def get_order_notes_from_reply(
                     document=order.payment_proof,
                     caption=text,
                     reply_markup=keyboard,
-                    parse_mode="HTML",
                 )
             except:
                 # Fallback to text message
@@ -1458,7 +1451,6 @@ async def get_order_notes_from_reply(
                     chat_id=chat_id,
                     text=text,
                     reply_markup=keyboard,
-                    parse_mode="HTML",
                 )
     else:
         # No payment proof, send as text message
@@ -1466,7 +1458,6 @@ async def get_order_notes_from_reply(
             chat_id=chat_id,
             text=text,
             reply_markup=keyboard,
-            parse_mode="HTML",
         )
 
 
@@ -1632,7 +1623,6 @@ async def get_order_amount_from_reply(
                 photo=order.payment_proof,
                 caption=text,
                 reply_markup=keyboard,
-                parse_mode="HTML",
             )
         except:
             # If photo fails, try document
@@ -1642,7 +1632,6 @@ async def get_order_amount_from_reply(
                     document=order.payment_proof,
                     caption=text,
                     reply_markup=keyboard,
-                    parse_mode="HTML",
                 )
             except:
                 # Fallback to text message
@@ -1650,7 +1639,6 @@ async def get_order_amount_from_reply(
                     chat_id=chat_id,
                     text=text,
                     reply_markup=keyboard,
-                    parse_mode="HTML",
                 )
     else:
         # No payment proof, send as text message
@@ -1658,7 +1646,6 @@ async def get_order_amount_from_reply(
             chat_id=chat_id,
             text=text,
             reply_markup=keyboard,
-            parse_mode="HTML",
         )
 
 
