@@ -824,6 +824,7 @@ async def change_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE
                         ),
                         show_alert=True,
                     )
+                    await update.callback_query.delete_message()
                     return
                 
                 # Check if order is assigned to another admin
@@ -889,6 +890,7 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             ),
                             show_alert=True,
                         )
+                        await update.callback_query.delete_message()
                         return
                     
                     # Check if order is assigned to another admin
