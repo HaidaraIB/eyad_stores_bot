@@ -10,20 +10,36 @@ from custom_filters import PrivateChat, PrivateChatAndAdmin
 async def back_to_user_home_page(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
-        await update.callback_query.edit_message_text(
-            text=TEXTS[lang]["home_page"],
-            reply_markup=build_user_keyboard(lang),
-        )
+        try:
+            await update.callback_query.edit_message_text(
+                text=TEXTS[lang]["home_page"],
+                reply_markup=build_user_keyboard(lang),
+            )
+        except:
+            await update.callback_query.delete_message()
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=TEXTS[lang]["home_page"],
+                reply_markup=build_user_keyboard(lang),
+            )
         return ConversationHandler.END
 
 
 async def back_to_admin_home_page(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChatAndAdmin().filter(update):
         lang = get_lang(update.effective_user.id)
-        await update.callback_query.edit_message_text(
-            text=TEXTS[lang]["home_page"],
-            reply_markup=build_admin_keyboard(lang, update.effective_user.id),
-        )
+        try:
+            await update.callback_query.edit_message_text(
+                text=TEXTS[lang]["home_page"],
+                reply_markup=build_admin_keyboard(lang, update.effective_user.id),
+            )
+        except:
+            await update.callback_query.delete_message()
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=TEXTS[lang]["home_page"],
+                reply_markup=build_admin_keyboard(lang, update.effective_user.id),
+            )
         return ConversationHandler.END
 
 

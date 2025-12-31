@@ -88,7 +88,6 @@ async def user_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
             balance = format_float(user.balance)
 
         keyboard = build_profile_keyboard(lang)
-        keyboard.append(build_back_button("back_to_user_settings", lang=lang))
         keyboard.append(build_back_to_home_page_button(lang=lang, is_admin=False)[0])
 
         text = TEXTS[lang]["profile_title"]
@@ -98,6 +97,7 @@ async def user_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text=text,
             reply_markup=InlineKeyboardMarkup(keyboard),
         )
+        return ConversationHandler.END
 
 
 user_profile_handler = CallbackQueryHandler(
@@ -313,7 +313,7 @@ async def get_charge_balance_proof(update: Update, context: ContextTypes.DEFAULT
         with models.session_scope() as s:
             user = s.get(models.User, update.effective_user.id)
             payment_method_address = s.get(models.PaymentMethodAddress, addr_id)
-            
+
             new_order = models.ChargingBalanceOrder(
                 user_id=update.effective_user.id,
                 payment_method_address_id=addr_id,
@@ -335,13 +335,21 @@ async def get_charge_balance_proof(update: Update, context: ContextTypes.DEFAULT
                 )
                 .format(order_id=order_id)
             )
-            
-            status_text = TEXTS[lang].get(f"order_status_{new_order.status.value}", new_order.status.value)
-            
+
+            status_text = TEXTS[lang].get(
+                f"order_status_{new_order.status.value}", new_order.status.value
+            )
+
             # Build order details
-            payment_method_name = payment_method_address.payment_method.name if payment_method_address else "N/A"
-            payment_address = payment_method_address.address if payment_method_address else "N/A"
-            
+            payment_method_name = (
+                payment_method_address.payment_method.name
+                if payment_method_address
+                else "N/A"
+            )
+            payment_address = (
+                payment_method_address.address if payment_method_address else "N/A"
+            )
+
             order_details = (
                 TEXTS[lang]
                 .get(
@@ -376,14 +384,6 @@ async def get_charge_balance_proof(update: Update, context: ContextTypes.DEFAULT
 
         # Notify all admins with MANAGE_ORDERS permission
         try:
-            notification_text = f"🔔 <b>New Charging Balance Order</b>\n\n"
-            notification_text += f"Order ID: <code>{order_id}</code>\n"
-            notification_text += f"User: {update.effective_user.mention_html()}\n"
-            notification_text += f"Amount: <code>{format_float(amount)}</code>\n"
-            notification_text += (
-                f"Status: {TEXTS[models.Language.ENGLISH]['order_status_pending']}"
-            )
-
             # Get all admins with MANAGE_ORDERS permission (including owner)
             with models.session_scope() as s:
                 # Get owner
@@ -403,30 +403,99 @@ async def get_charge_balance_proof(update: Update, context: ContextTypes.DEFAULT
                     if perm.admin_id not in admin_ids:
                         admin_ids.append(perm.admin_id)
 
-            # Send notification to all admins
+                # Get order with relationships for complete details using eager loading
+                from sqlalchemy.orm import joinedload
+
+                order = (
+                    s.query(models.ChargingBalanceOrder)
+                    .options(
+                        joinedload(
+                            models.ChargingBalanceOrder.payment_method_address
+                        ).joinedload(models.PaymentMethodAddress.payment_method),
+                        joinedload(models.ChargingBalanceOrder.user),
+                    )
+                    .filter(models.ChargingBalanceOrder.id == order_id)
+                    .first()
+                )
+                if not order:
+                    return
+
+            # Send notification to all admins with complete order details
+            # Use each admin's preferred language
             for admin_id in admin_ids:
                 try:
-                    await context.bot.send_message(
-                        chat_id=admin_id,
-                        text=notification_text,
-                    )
-                    # Send payment proof
+                    # Get admin's language from database and build message
+                    with models.session_scope() as s:
+                        admin_user = s.get(models.User, admin_id)
+                        if not admin_user:
+                            continue
+                        lang = admin_user.lang
+
+                        # Re-query order with relationships for this admin's session
+                        from sqlalchemy.orm import joinedload
+
+                        order = (
+                            s.query(models.ChargingBalanceOrder)
+                            .options(
+                                joinedload(
+                                    models.ChargingBalanceOrder.payment_method_address
+                                ).joinedload(
+                                    models.PaymentMethodAddress.payment_method
+                                ),
+                                joinedload(models.ChargingBalanceOrder.user),
+                            )
+                            .filter(models.ChargingBalanceOrder.id == order_id)
+                            .first()
+                        )
+                        if not order:
+                            continue
+
+                        # Build complete order details message for this admin's language
+                        text = order.stringify(lang)
+                        text += f"\n\n<b>{TEXTS[lang].get('user', 'User')}:</b>"
+                        text += f"\n{order.user.stringify(lang)}"
+
+                        # Build keyboard with actions
+                        from admin.orders_settings.keyboards import (
+                            build_order_actions_keyboard,
+                        )
+
+                        actions_keyboard = build_order_actions_keyboard(
+                            lang, order_id, "charging"
+                        )
+
+                    # If payment proof exists, send as photo with caption
                     if payment_proof:
                         try:
                             await context.bot.send_photo(
                                 chat_id=admin_id,
                                 photo=payment_proof,
-                                caption=f"Payment Proof - Order #{order_id}",
+                                caption=text,
+                                reply_markup=InlineKeyboardMarkup(actions_keyboard),
                             )
                         except:
+                            # If photo fails, try as document
                             try:
                                 await context.bot.send_document(
                                     chat_id=admin_id,
                                     document=payment_proof,
-                                    caption=f"Payment Proof - Order #{order_id}",
+                                    caption=text,
+                                    reply_markup=InlineKeyboardMarkup(actions_keyboard),
                                 )
                             except:
-                                pass
+                                # If both fail, send as text message
+                                await context.bot.send_message(
+                                    chat_id=admin_id,
+                                    text=text,
+                                    reply_markup=InlineKeyboardMarkup(actions_keyboard),
+                                )
+                    else:
+                        # No payment proof, send as text message
+                        await context.bot.send_message(
+                            chat_id=admin_id,
+                            text=text,
+                            reply_markup=InlineKeyboardMarkup(actions_keyboard),
+                        )
                 except:
                     continue
         except:
@@ -475,6 +544,7 @@ charge_balance_handler = ConversationHandler(
         start_command,
         admin_command,
         back_to_user_home_page_handler,
+        user_profile_handler,
         CallbackQueryHandler(back_to_charge_balance_pm, r"^back_to_charge_balance_pm$"),
         CallbackQueryHandler(
             back_to_charge_balance_addr, r"^back_to_charge_balance_addr$"
@@ -493,11 +563,18 @@ async def my_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = build_order_type_keyboard(lang)
         keyboard.append(build_back_button("back_to_user_profile", lang=lang))
         keyboard.append(build_back_to_home_page_button(lang=lang, is_admin=False)[0])
-
-        await update.callback_query.edit_message_text(
-            text=TEXTS[lang]["select_order_type"],
-            reply_markup=InlineKeyboardMarkup(keyboard),
-        )
+        try:
+            await update.callback_query.edit_message_text(
+                text=TEXTS[lang]["select_order_type"],
+                reply_markup=InlineKeyboardMarkup(keyboard),
+            )
+        except:
+            await update.callback_query.delete_message()
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=TEXTS[lang]["select_order_type"],
+                reply_markup=InlineKeyboardMarkup(keyboard),
+            )
 
 
 my_orders_handler = CallbackQueryHandler(
@@ -518,7 +595,7 @@ async def show_charging_balance_orders(
                 .filter(models.ChargingBalanceOrder.user_id == update.effective_user.id)
                 .count()
             )
-            
+
             if total_count == 0:
                 await update.callback_query.answer(
                     text=TEXTS[lang]["no_orders"],
@@ -550,13 +627,40 @@ async def show_charging_balance_orders(
             )
 
             text = f"<b>{TEXTS[lang]['charging_balance_orders']}</b>\n\n{TEXTS[lang].get('select_order', 'Select an order to view:')}"
-            await update.callback_query.edit_message_text(
-                text=text,
-                reply_markup=keyboard,
+
+            # Check if current message has a photo (need to replace with text when going back)
+            current_message = update.callback_query.message
+            has_photo = (
+                current_message.photo is not None and len(current_message.photo) > 0
             )
 
+            if has_photo:
+                # Current message has photo, need to replace with text
+                try:
+                    await update.callback_query.message.delete()
+                    await context.bot.send_message(
+                        chat_id=update.effective_chat.id,
+                        text=text,
+                        reply_markup=keyboard,
+                        parse_mode="HTML",
+                    )
+                except:
+                    # If delete fails, try editing caption (will fail but we try)
+                    await update.callback_query.edit_message_text(
+                        text=text,
+                        reply_markup=keyboard,
+                    )
+            else:
+                # No photo, just edit text
+                await update.callback_query.edit_message_text(
+                    text=text,
+                    reply_markup=keyboard,
+                )
 
-async def show_purchase_orders(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0):
+
+async def show_purchase_orders(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0
+):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
         with models.session_scope() as s:
@@ -566,7 +670,7 @@ async def show_purchase_orders(update: Update, context: ContextTypes.DEFAULT_TYP
                 .filter(models.PurchaseOrder.user_id == update.effective_user.id)
                 .count()
             )
-            
+
             if total_count == 0:
                 await update.callback_query.answer(
                     text=TEXTS[lang]["no_orders"],
@@ -627,11 +731,109 @@ async def view_charging_balance_order(
                 build_back_button("back_to_charging_balance_orders", lang=lang),
                 build_back_to_home_page_button(lang=lang, is_admin=False)[0],
             ]
+            keyboard = InlineKeyboardMarkup(back_buttons)
 
-            await update.callback_query.edit_message_text(
-                text=text,
-                reply_markup=InlineKeyboardMarkup(back_buttons),
-            )
+            # If payment proof exists, use photo-caption style
+            if order.payment_proof:
+                # Check if current message has a photo
+                current_message = update.callback_query.message
+                has_photo = (
+                    current_message.photo is not None and len(current_message.photo) > 0
+                )
+
+                if has_photo:
+                    # Message already has photo, edit caption
+                    try:
+                        await update.callback_query.edit_message_caption(
+                            caption=text,
+                            reply_markup=keyboard,
+                        )
+                    except:
+                        # If edit fails, delete and send new photo with caption
+                        try:
+                            await update.callback_query.message.delete()
+                            await context.bot.send_photo(
+                                chat_id=update.effective_chat.id,
+                                photo=order.payment_proof,
+                                caption=text,
+                                reply_markup=keyboard,
+                                parse_mode="HTML",
+                            )
+                        except:
+                            # If photo fails, try document
+                            try:
+                                await context.bot.send_document(
+                                    chat_id=update.effective_chat.id,
+                                    document=order.payment_proof,
+                                    caption=text,
+                                    reply_markup=keyboard,
+                                    parse_mode="HTML",
+                                )
+                            except:
+                                # Fallback to text message
+                                await context.bot.send_message(
+                                    chat_id=update.effective_chat.id,
+                                    text=text,
+                                    reply_markup=keyboard,
+                                    parse_mode="HTML",
+                                )
+                else:
+                    # Message doesn't have photo, need to replace with photo
+                    try:
+                        await update.callback_query.message.delete()
+                        await context.bot.send_photo(
+                            chat_id=update.effective_chat.id,
+                            photo=order.payment_proof,
+                            caption=text,
+                            reply_markup=keyboard,
+                            parse_mode="HTML",
+                        )
+                    except:
+                        # If photo fails, try document
+                        try:
+                            await context.bot.send_document(
+                                chat_id=update.effective_chat.id,
+                                document=order.payment_proof,
+                                caption=text,
+                                reply_markup=keyboard,
+                                parse_mode="HTML",
+                            )
+                        except:
+                            # Fallback to text message
+                            await update.callback_query.edit_message_text(
+                                text=text,
+                                reply_markup=keyboard,
+                            )
+            else:
+                # No payment proof, use text message
+                # Check if current message has photo (need to replace with text)
+                current_message = update.callback_query.message
+                has_photo = (
+                    current_message.photo is not None and len(current_message.photo) > 0
+                )
+
+                if has_photo:
+                    # Current message has photo but order doesn't have proof, replace with text
+                    try:
+                        await update.callback_query.message.delete()
+                        await context.bot.send_message(
+                            chat_id=update.effective_chat.id,
+                            text=text,
+                            reply_markup=keyboard,
+                            parse_mode="HTML",
+                        )
+                    except:
+                        # If delete fails, try editing caption (will fail but we try)
+                        await update.callback_query.edit_message_text(
+                            text=text,
+                            reply_markup=keyboard,
+                        )
+                else:
+                    # No photo, just edit text
+                    await update.callback_query.edit_message_text(
+                        text=text,
+                        reply_markup=keyboard,
+                    )
 
 
 async def view_purchase_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -674,6 +876,7 @@ back_to_purchase_orders_handler = CallbackQueryHandler(
     back_to_purchase_orders,
     r"^back_to_purchase_orders$",
 )
+
 
 async def handle_charging_balance_orders_pagination(
     update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -745,7 +948,9 @@ view_purchase_order_handler = CallbackQueryHandler(
 )
 
 
-async def show_api_purchase_orders(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0):
+async def show_api_purchase_orders(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0
+):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
         with models.session_scope() as s:
@@ -755,7 +960,7 @@ async def show_api_purchase_orders(update: Update, context: ContextTypes.DEFAULT
                 .filter(models.ApiPurchaseOrder.user_id == update.effective_user.id)
                 .count()
             )
-            
+
             if total_count == 0:
                 await update.callback_query.answer(
                     text=TEXTS[lang]["no_orders"],
@@ -796,7 +1001,9 @@ async def show_api_purchase_orders(update: Update, context: ContextTypes.DEFAULT
 async def view_api_purchase_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
-        order_id = int(update.callback_query.data.replace("view_api_purchase_order_", ""))
+        order_id = int(
+            update.callback_query.data.replace("view_api_purchase_order_", "")
+        )
 
         with models.session_scope() as s:
             order = s.get(models.ApiPurchaseOrder, order_id)

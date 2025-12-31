@@ -713,7 +713,6 @@ async def get_address_label(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data["new_address_label"] = None
 
         back_buttons = [
-            build_skip_button("skip_address_label", lang=lang),
             build_back_button("back_to_get_address_label", lang=lang),
             build_back_to_home_page_button(lang=lang)[0],
         ]

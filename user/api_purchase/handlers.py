@@ -851,7 +851,8 @@ async def create_api_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         return ConversationHandler.END
                     
                     # Deduct balance in SDG (API already deducted from their balance)
-                    user.balance -= denom_price_sudan
+                    from decimal import Decimal
+                    user.balance -= Decimal(str(denom_price_sudan))
                     
                     api_order = models.ApiPurchaseOrder(
                         user_id=update.effective_user.id,

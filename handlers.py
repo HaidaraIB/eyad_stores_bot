@@ -36,11 +36,6 @@ def setup_and_run():
 
     app = MyApp.build_app()
 
-    # USER SETTINGS
-    app.add_handler(user_settings_handler)
-    app.add_handler(change_lang_handler)
-    app.add_handler(user_profile_handler)
-
     # USER ORDERS
     app.add_handler(back_to_charging_balance_orders_handler)
     app.add_handler(back_to_purchase_orders_handler)
@@ -105,7 +100,10 @@ def setup_and_run():
     app.add_handler(set_order_status_handler)
     app.add_handler(back_to_charging_order_handler)
     app.add_handler(back_to_purchase_order_handler)
+    app.add_handler(edit_order_amount_handler)
+    app.add_handler(get_order_amount_handler)
     app.add_handler(add_order_notes_handler)
+    app.add_handler(get_order_notes_handler)
     app.add_handler(back_to_admin_charging_balance_orders_handler)
     app.add_handler(back_to_admin_purchase_orders_handler)
     app.add_handler(request_charging_order_handler)
@@ -132,6 +130,11 @@ def setup_and_run():
     app.add_handler(manage_users_settings_handler)
     app.add_handler(export_users_handler)
 
+    # USER SETTINGS
+    app.add_handler(user_settings_handler)
+    app.add_handler(change_lang_handler)
+    app.add_handler(user_profile_handler)
+
     # FORCE JOIN CHATS
     app.add_handler(add_force_join_chat_handler)
     app.add_handler(remove_force_join_chat_handler)
@@ -155,10 +158,16 @@ def setup_and_run():
 
     # Schedule API orders polling job (every 30 seconds)
     from jobs import poll_api_orders_status
+
     app.job_queue.run_repeating(
         poll_api_orders_status,
         interval=30,  # Check every 30 seconds
         first=10,  # Start after 10 seconds
+        name="poll_api_orders_status",
+        job_kwargs={
+            "id": "poll_api_orders_status",
+            "replace_existing": True,
+        },
     )
 
     app.run_polling(allowed_updates=Update.ALL_TYPES)

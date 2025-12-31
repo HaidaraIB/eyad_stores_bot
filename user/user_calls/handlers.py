@@ -216,19 +216,6 @@ async def get_purchase_order_account_id(
 
             # Notify all admins with MANAGE_ORDERS permission
             try:
-                notification_text = f"🔔 <b>New Purchase Order</b>\n\n"
-                notification_text += f"Order ID: <code>{order_id}</code>\n"
-                notification_text += f"User: {update.effective_user.mention_html()}\n"
-                notification_text += f"Item: {escape_html(item.name)}\n"
-                notification_text += f"Game: {escape_html(item.game.name)}\n"
-                notification_text += f"Price: <code>{format_float(item.price)}</code>\n"
-                notification_text += (
-                    f"Game Account ID: <code>{escape_html(game_account_id)}</code>\n"
-                )
-                notification_text += (
-                    f"Status: {TEXTS[models.Language.ENGLISH]['order_status_pending']}"
-                )
-
                 # Get all admins with MANAGE_ORDERS permission (including owner)
                 with models.session_scope() as s:
                     # Get owner
@@ -248,12 +235,58 @@ async def get_purchase_order_account_id(
                         if perm.admin_id not in admin_ids:
                             admin_ids.append(perm.admin_id)
 
-                # Send notification to all admins
+                    # Get order with relationships for complete details using eager loading
+                    from sqlalchemy.orm import joinedload
+                    order = (
+                        s.query(models.PurchaseOrder)
+                        .options(
+                            joinedload(models.PurchaseOrder.item).joinedload(models.Item.game),
+                            joinedload(models.PurchaseOrder.user)
+                        )
+                        .filter(models.PurchaseOrder.id == order_id)
+                        .first()
+                    )
+                    if not order:
+                        return
+
+                # Send notification to all admins with complete order details
+                # Use each admin's preferred language
                 for admin_id in admin_ids:
                     try:
+                        # Get admin's language from database and build message
+                        with models.session_scope() as s:
+                            admin_user = s.get(models.User, admin_id)
+                            if not admin_user:
+                                continue
+                            lang = admin_user.lang
+                            
+                            # Re-query order with relationships for this admin's session
+                            from sqlalchemy.orm import joinedload
+                            order = (
+                                s.query(models.PurchaseOrder)
+                                .options(
+                                    joinedload(models.PurchaseOrder.item).joinedload(models.Item.game),
+                                    joinedload(models.PurchaseOrder.user)
+                                )
+                                .filter(models.PurchaseOrder.id == order_id)
+                                .first()
+                            )
+                            if not order:
+                                continue
+                            
+                            # Build complete order details message for this admin's language
+                            text = order.stringify(lang)
+                            text += f"\n\n<b>{TEXTS[lang].get('user', 'User')}:</b>"
+                            text += f"\n{order.user.stringify(lang)}"
+
+                            # Build keyboard with actions
+                            from admin.orders_settings.keyboards import build_order_actions_keyboard
+                            actions_keyboard = build_order_actions_keyboard(lang, order_id, "purchase")
+                        
                         await context.bot.send_message(
                             chat_id=admin_id,
-                            text=notification_text,
+                            text=text,
+                            reply_markup=InlineKeyboardMarkup(actions_keyboard),
                         )
                     except:
                         continue

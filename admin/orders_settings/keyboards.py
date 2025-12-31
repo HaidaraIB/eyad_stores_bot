@@ -71,18 +71,30 @@ def build_order_actions_keyboard(
     order_type: str,
 ):
     """Build keyboard with actions for an order"""
-    keyboard = [
-        [
-            InlineKeyboardButton(
-                text=BUTTONS[lang].get("change_status", "Change Status"),
-                callback_data=f"change_status_{order_type}_{order_id}",
-            ),
-            InlineKeyboardButton(
-                text=BUTTONS[lang].get("add_notes", "Add Notes"),
-                callback_data=f"add_notes_{order_type}_{order_id}",
-            ),
-        ],
+    keyboard = []
+    
+    # First row: Change Status and Add Notes
+    first_row = [
+        InlineKeyboardButton(
+            text=BUTTONS[lang].get("change_status", "Change Status"),
+            callback_data=f"change_status_{order_type}_{order_id}",
+        ),
+        InlineKeyboardButton(
+            text=BUTTONS[lang].get("add_notes", "Add Notes"),
+            callback_data=f"add_notes_{order_type}_{order_id}",
+        ),
     ]
+    keyboard.append(first_row)
+    
+    # Second row: Edit Amount (only for charging orders)
+    if order_type == "charging":
+        keyboard.append([
+            InlineKeyboardButton(
+                text=BUTTONS[lang].get("edit_amount", "Edit Amount"),
+                callback_data=f"edit_amount_{order_type}_{order_id}",
+            ),
+        ])
+    
     return keyboard
 
 
