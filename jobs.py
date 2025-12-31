@@ -179,7 +179,7 @@ async def notify_user_order_status(
         )
         user = s.get(models.User, order.user_id)
         await context.bot.send_message(
-            chat_id=Config.ARCHIVE_CHANNEL,
+            chat_id=Config.API_PURCHASES_ARCHIVE_CHANNEL,
             text=(
                 message
                 + "\n\n"

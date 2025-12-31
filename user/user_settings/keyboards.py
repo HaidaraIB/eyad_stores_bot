@@ -1,7 +1,7 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from common.lang_dicts import BUTTONS, TEXTS
 from common.keyboards import build_back_button, build_back_to_home_page_button
-from common.common import escape_html, format_float
+from common.common import escape_html, format_float, get_status_emoji
 import models
 
 ORDERS_PER_PAGE = 10  # Number of orders per page for users
@@ -88,10 +88,11 @@ def build_user_orders_list_keyboard(
             game_name = (
                 order.api_game.get_display_name(lang) if order.api_game else "N/A"
             )
+            status_emoji = get_status_emoji(order.status)
             status_text = TEXTS[lang].get(
                 f"api_order_status_{order.status.value}", order.status.value
             )
-            order_text = f"#{order.id} - {escape_html(game_name[:15])} - {status_text}"
+            order_text = f"#{order.id} - {escape_html(game_name[:15])} - {status_text} {status_emoji}"
         
         keyboard.append([
             InlineKeyboardButton(

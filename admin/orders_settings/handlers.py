@@ -18,8 +18,18 @@ from common.keyboards import (
 )
 from common.lang_dicts import TEXTS, get_lang
 from common.common import escape_html, format_float
-from custom_filters import PrivateChatAndAdmin, PermissionFilter, OrderNotesReplyFilter, OrderAmountReplyFilter
+from custom_filters import (
+    PrivateChatAndAdmin,
+    PermissionFilter,
+    OrderNotesReplyFilter,
+    OrderAmountReplyFilter,
+)
 import models
+from Config import Config
+from sqlalchemy.orm import joinedload
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Note: Order notes are now handled via reply to order messages
 
@@ -299,14 +309,17 @@ async def show_charging_balance_orders_admin(
             )
 
             text = f"<b>{TEXTS[lang]['charging_balance_orders']}</b>\n\n{TEXTS[lang].get('select_order', 'Select an order to view:')}"
-                
+
             try:
                 await update.callback_query.edit_message_text(
                     text=text,
                     reply_markup=keyboard,
                 )
             except:
-                await update.callback_query.delete_message()
+                try:
+                    await update.callback_query.delete_message()
+                except:
+                    pass
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id,
                     text=text,
@@ -778,20 +791,26 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             show_alert=True,
                         )
                         return
-                    
+
                     # Save old status before changing
                     old_status = order_obj.status
                     new_status = models.ChargingOrderStatus(status_value)
-                    
+
                     # Only process balance changes if status actually changed
                     if old_status != new_status:
                         # If changing TO completed: add balance
-                        if old_status != models.ChargingOrderStatus.COMPLETED and new_status == models.ChargingOrderStatus.COMPLETED:
+                        if (
+                            old_status != models.ChargingOrderStatus.COMPLETED
+                            and new_status == models.ChargingOrderStatus.COMPLETED
+                        ):
                             user_obj.balance += order_obj.amount
                         # If changing FROM completed to any other status: deduct balance
-                        elif old_status == models.ChargingOrderStatus.COMPLETED and new_status != models.ChargingOrderStatus.COMPLETED:
+                        elif (
+                            old_status == models.ChargingOrderStatus.COMPLETED
+                            and new_status != models.ChargingOrderStatus.COMPLETED
+                        ):
                             user_obj.balance -= order_obj.amount
-                    
+
                     # Update status
                     order_obj.status = new_status
             else:
@@ -805,11 +824,11 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             show_alert=True,
                         )
                         return
-                    
+
                     # Save old status before changing
                     old_status = order_obj.status
                     new_status = models.PurchaseOrderStatus(status_value)
-                    
+
                     # Only process balance changes if status actually changed and item exists
                     # Note: Balance is deducted when order is created (PENDING status)
                     # So we need to refund when changing to REFUNDED, CANCELLED, or FAILED
@@ -821,31 +840,33 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             models.PurchaseOrderStatus.CANCELLED,
                             models.PurchaseOrderStatus.FAILED,
                         ]
-                        
+
                         # States that are active (balance was deducted at creation)
                         active_states = [
                             models.PurchaseOrderStatus.PENDING,
                             models.PurchaseOrderStatus.PROCESSING,
                             models.PurchaseOrderStatus.COMPLETED,
                         ]
-                        
+
                         # If changing FROM active state TO refund state: refund balance
                         if old_status in active_states and new_status in refund_states:
                             user_obj.balance += order_obj.item.price
                         # If changing FROM refund state TO active state: deduct balance again
-                        elif old_status in refund_states and new_status in active_states:
+                        elif (
+                            old_status in refund_states and new_status in active_states
+                        ):
                             user_obj.balance -= order_obj.item.price
-                    
+
                     # Update status
                     order_obj.status = new_status
-            
+
             if not order_obj:
                 await update.callback_query.answer(
                     text=TEXTS[lang].get("order_not_found", "Order not found ❌"),
                     show_alert=True,
                 )
                 return
-            
+
             if not user_obj:
                 await update.callback_query.answer(
                     text=TEXTS[lang].get("user_not_found", "User not found ❌"),
@@ -853,25 +874,147 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
                 return
 
+            # Check if new status is terminal (COMPLETED or FAILED) and status actually changed
+            is_terminal = False
+            status_changed = old_status != new_status
+            if order_type == "charging":
+                is_terminal = new_status in [
+                    models.ChargingOrderStatus.COMPLETED,
+                    models.ChargingOrderStatus.FAILED,
+                    models.ChargingOrderStatus.CANCELLED,
+                ]
+
+            else:
+                is_terminal = new_status in [
+                    models.PurchaseOrderStatus.COMPLETED,
+                    models.PurchaseOrderStatus.FAILED,
+                    models.PurchaseOrderStatus.CANCELLED,
+                ]
+
+            # If terminal and status changed, archive the order and delete the bot message
+            if is_terminal and status_changed:
+                # Eager load relationships for archiving
+                if order_type == "charging":
+                    order_for_archive = (
+                        s.query(models.ChargingBalanceOrder)
+                        .options(
+                            joinedload(
+                                models.ChargingBalanceOrder.payment_method_address
+                            ).joinedload(models.PaymentMethodAddress.payment_method),
+                            joinedload(models.ChargingBalanceOrder.user),
+                        )
+                        .filter(models.ChargingBalanceOrder.id == order_id)
+                        .first()
+                    )
+                else:
+                    order_for_archive = (
+                        s.query(models.PurchaseOrder)
+                        .options(
+                            joinedload(models.PurchaseOrder.item).joinedload(
+                                models.Item.game
+                            ),
+                            joinedload(models.PurchaseOrder.user),
+                        )
+                        .filter(models.PurchaseOrder.id == order_id)
+                        .first()
+                    )
+
+                if order_for_archive:
+                    # Archive the order
+                    try:
+                        archive_lang = lang  # Use admin's language for archive
+                        archive_text = order_for_archive.stringify(archive_lang)
+                        archive_text += (
+                            f"\n\n<b>{TEXTS[archive_lang].get('user', 'User')}:</b>"
+                        )
+                        archive_text += (
+                            f"\n{order_for_archive.user.stringify(archive_lang)}"
+                        )
+
+                        if order_type == "charging":
+                            archive_channel = (
+                                Config.CHARGING_BALANCE_ORDERS_ARCHIVE_CHANNEL
+                            )
+                            # Send with payment proof if exists
+                            if order_for_archive.payment_proof:
+                                try:
+                                    await context.bot.send_photo(
+                                        chat_id=archive_channel,
+                                        photo=order_for_archive.payment_proof,
+                                        caption=archive_text,
+                                        parse_mode="HTML",
+                                    )
+                                except:
+                                    try:
+                                        await context.bot.send_document(
+                                            chat_id=archive_channel,
+                                            document=order_for_archive.payment_proof,
+                                            caption=archive_text,
+                                            parse_mode="HTML",
+                                        )
+                                    except:
+                                        await context.bot.send_message(
+                                            chat_id=archive_channel,
+                                            text=archive_text,
+                                            parse_mode="HTML",
+                                        )
+                            else:
+                                await context.bot.send_message(
+                                    chat_id=archive_channel,
+                                    text=archive_text,
+                                    parse_mode="HTML",
+                                )
+                        else:
+                            archive_channel = Config.MANUAL_PURCHASES_ARCHIVE_CHANNEL
+                            await context.bot.send_message(
+                                chat_id=archive_channel,
+                                text=archive_text,
+                                parse_mode="HTML",
+                            )
+
+                        logger.info(
+                            f"Archived {order_type} order {order_id} to channel {archive_channel}"
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"Error archiving {order_type} order {order_id}: {str(e)}",
+                            exc_info=True,
+                        )
+
+                    # Delete the bot message (not the order from database)
+                    try:
+                        await update.callback_query.delete_message()
+                        logger.info(
+                            f"Deleted bot message for {order_type} order {order_id}"
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"Error deleting bot message for {order_type} order {order_id}: {str(e)}",
+                            exc_info=True,
+                        )
+
             await update.callback_query.answer(
                 text=TEXTS[lang].get("order_status_updated", "Order status updated ✅"),
                 show_alert=True,
             )
 
             # sending notification to user
-            try:
+            if status_changed:
                 user_lang = user_obj.lang
                 status_text = TEXTS[user_lang].get(
                     f"order_status_{status_value}", status_value
                 )
 
+                from common.common import get_status_emoji
+                status_emoji = get_status_emoji(new_status)
+                
                 if order_type == "charging":
                     notification_text = TEXTS[user_lang].get(
                         "charging_order_status_changed",
                         "🔔 <b>Charging Balance Order Status Updated</b>\n\n",
                     )
                     notification_text += f"<b>{TEXTS[user_lang].get('order_id', 'Order ID')}:</b> <code>{order_id}</code>\n"
-                    notification_text += f"<b>{TEXTS[user_lang].get('order_status', 'Order Status')}:</b> {status_text}\n"
+                    notification_text += f"<b>{TEXTS[user_lang].get('order_status', 'Order Status')}:</b> {status_text} {status_emoji}\n"
                     notification_text += f"<b>{TEXTS[user_lang].get('order_amount', 'Amount')}:</b> <code>{format_float(order_obj.amount)}</code>"
                 else:
                     notification_text = TEXTS[user_lang].get(
@@ -879,7 +1022,7 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         "🔔 <b>Purchase Order Status Updated</b>\n\n",
                     )
                     notification_text += f"<b>{TEXTS[user_lang].get('order_id', 'Order ID')}:</b> <code>{order_id}</code>\n"
-                    notification_text += f"<b>{TEXTS[user_lang].get('order_status', 'Order Status')}:</b> {status_text}"
+                    notification_text += f"<b>{TEXTS[user_lang].get('order_status', 'Order Status')}:</b> {status_text} {status_emoji}"
                     if order_obj.item:
                         notification_text += f"\n<b>{TEXTS[user_lang].get('item_name', 'Item Name')}:</b> {escape_html(order_obj.item.name)}"
 
@@ -887,8 +1030,17 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     chat_id=user_obj.user_id,
                     text=notification_text,
                 )
-            except:
-                pass
+
+        # If order message was deleted (terminal status), redirect to orders list
+        if is_terminal:
+            order_type_for_redirect = context.user_data.get("editing_order_type")
+            if order_type_for_redirect == "charging":
+                # Redirect to charging orders list
+                await show_charging_balance_orders_admin(update, context, page=0)
+            else:
+                # Redirect to purchase orders list
+                await show_purchase_orders_admin(update, context, page=0)
+            return
 
         # Return to order view by directly calling the view function
         order_type = context.user_data.get("editing_order_type")
@@ -1227,13 +1379,15 @@ async def get_order_notes_from_reply(
     # Save notes to order
     with models.session_scope() as s:
         from sqlalchemy.orm import joinedload
-        
+
         if order_type == "charging":
             order = (
                 s.query(models.ChargingBalanceOrder)
                 .options(
-                    joinedload(models.ChargingBalanceOrder.payment_method_address).joinedload(models.PaymentMethodAddress.payment_method),
-                    joinedload(models.ChargingBalanceOrder.user)
+                    joinedload(
+                        models.ChargingBalanceOrder.payment_method_address
+                    ).joinedload(models.PaymentMethodAddress.payment_method),
+                    joinedload(models.ChargingBalanceOrder.user),
                 )
                 .filter(models.ChargingBalanceOrder.id == order_id)
                 .first()
@@ -1243,7 +1397,7 @@ async def get_order_notes_from_reply(
                 s.query(models.PurchaseOrder)
                 .options(
                     joinedload(models.PurchaseOrder.item).joinedload(models.Item.game),
-                    joinedload(models.PurchaseOrder.user)
+                    joinedload(models.PurchaseOrder.user),
                 )
                 .filter(models.PurchaseOrder.id == order_id)
                 .first()
@@ -1271,9 +1425,7 @@ async def get_order_notes_from_reply(
         actions_keyboard.append(
             build_back_button("back_to_admin_purchase_orders", lang=lang)
         )
-    actions_keyboard.append(
-        build_back_to_home_page_button(lang=lang, is_admin=True)[0]
-    )
+    actions_keyboard.append(build_back_to_home_page_button(lang=lang, is_admin=True)[0])
     keyboard = InlineKeyboardMarkup(actions_keyboard)
 
     # Send success message
@@ -1283,9 +1435,13 @@ async def get_order_notes_from_reply(
 
     # Resend the updated order message
     chat_id = update.effective_chat.id
-    
+
     # Check if original message had a photo (for charging orders with payment proof)
-    if order_type == "charging" and hasattr(order, 'payment_proof') and order.payment_proof:
+    if (
+        order_type == "charging"
+        and hasattr(order, "payment_proof")
+        and order.payment_proof
+    ):
         try:
             await context.bot.send_photo(
                 chat_id=chat_id,
@@ -1327,6 +1483,7 @@ add_order_notes_handler = CallbackQueryHandler(
     add_order_notes,
     r"^add_notes_(charging|purchase)_\d+$",
 )
+
 
 async def get_order_amount_from_reply(
     update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -1404,9 +1561,9 @@ async def get_order_amount_from_reply(
         order = (
             s.query(models.ChargingBalanceOrder)
             .options(
-                joinedload(models.ChargingBalanceOrder.payment_method_address).joinedload(
-                    models.PaymentMethodAddress.payment_method
-                ),
+                joinedload(
+                    models.ChargingBalanceOrder.payment_method_address
+                ).joinedload(models.PaymentMethodAddress.payment_method),
                 joinedload(models.ChargingBalanceOrder.user),
             )
             .filter(models.ChargingBalanceOrder.id == order_id)
@@ -1429,18 +1586,19 @@ async def get_order_amount_from_reply(
 
         # Save old amount (convert to float for calculation)
         old_amount = float(order.amount)
-        
+
         # Calculate difference
         amount_difference = new_amount - old_amount
-        
+
         # Update balance only if order status is COMPLETED
         # (because balance is only added to user when status becomes completed)
         if order.status == models.ChargingOrderStatus.COMPLETED:
             # Adjust balance based on the difference
             # Convert amount_difference to Decimal to match user.balance type
             from decimal import Decimal
+
             user.balance += Decimal(str(amount_difference))
-        
+
         # Update amount
         order.amount = new_amount
 
@@ -1453,19 +1611,19 @@ async def get_order_amount_from_reply(
     actions_keyboard.append(
         build_back_button("back_to_admin_charging_balance_orders", lang=lang)
     )
-    actions_keyboard.append(
-        build_back_to_home_page_button(lang=lang, is_admin=True)[0]
-    )
+    actions_keyboard.append(build_back_to_home_page_button(lang=lang, is_admin=True)[0])
     keyboard = InlineKeyboardMarkup(actions_keyboard)
 
     # Send success message
     from common.common import format_float
 
     await update.message.reply_text(
-        text=TEXTS[lang].get(
+        text=TEXTS[lang]
+        .get(
             "order_amount_updated",
             "Amount updated successfully ✅\nOld amount: {old_amount} SDG\nNew amount: {new_amount} SDG",
-        ).format(
+        )
+        .format(
             old_amount=format_float(old_amount),
             new_amount=format_float(new_amount),
         ),
@@ -1529,7 +1687,12 @@ get_order_notes_handler = MessageHandler(
 )
 
 get_order_amount_handler = MessageHandler(
-    filters=(filters.REPLY & filters.Regex(r"^\d+(\.\d+)?$") & PrivateChatAndAdmin() & OrderAmountReplyFilter()),
+    filters=(
+        filters.REPLY
+        & filters.Regex(r"^\d+(\.\d+)?$")
+        & PrivateChatAndAdmin()
+        & OrderAmountReplyFilter()
+    ),
     callback=get_order_amount_from_reply,
 )
 

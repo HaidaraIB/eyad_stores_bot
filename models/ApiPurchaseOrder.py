@@ -64,6 +64,8 @@ class ApiPurchaseOrder(Base):
         from common.common import escape_html, format_datetime, format_float
 
         texts = TEXTS[lang]
+        from common.common import get_status_emoji
+        status_emoji = get_status_emoji(self.status)
         status_text = texts.get(
             f"api_order_status_{self.status.value}", self.status.value
         )
@@ -76,7 +78,7 @@ class ApiPurchaseOrder(Base):
             "",
             f"<b>{texts.get('order_id', 'Order ID')}:</b> <code>{self.id}</code>",
             f"<b>{texts.get('api_order_id', 'API Order ID')}:</b> <code>{self.api_order_id}</code>",
-            f"<b>{texts.get('order_status', 'Status')}:</b> {status_text}",
+            f"<b>{texts.get('order_status', 'Status')}:</b> {status_text} {status_emoji}",
             f"<b>{texts.get('game', 'Game')}:</b> {escape_html(game_display_name)}",
             f"<b>{texts.get('denomination', 'Denomination')}:</b> {escape_html(self.denomination_name)}",
             f"<b>{texts.get('player_id', 'Player ID')}:</b> <code>{escape_html(self.player_id)}</code>",

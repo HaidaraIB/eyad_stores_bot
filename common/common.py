@@ -48,6 +48,23 @@ def escape_html(text):
     return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
+def get_status_emoji(status):
+    """Get emoji for order status"""
+    status_value = status.value if hasattr(status, "value") else str(status).lower()
+    
+    emoji_map = {
+        "pending": "⏳",
+        "processing": "🔄",
+        "completed": "✅",
+        "failed": "❌",
+        "cancelled": "🚫",
+        "canceled": "🚫",  # Alternative spelling
+        "refunded": "💰",
+    }
+    
+    return emoji_map.get(status_value, "📋")
+
+
 def get_exchange_rate():
     """Get USD to Sudan currency exchange rate from database"""
     from models.DB import session_scope

@@ -56,13 +56,15 @@ class PurchaseOrder(Base):
         from common.common import escape_html, format_datetime, format_float
 
         texts = TEXTS[lang]
+        from common.common import get_status_emoji
+        status_emoji = get_status_emoji(self.status)
         status_text = texts.get(f"order_status_{self.status.value}", self.status.value)
         
         lines = [
             f"<b>{texts['order_details_text']}</b>",
             "",
             f"<b>{texts['order_id']}:</b> <code>{self.id}</code>",
-            f"<b>{texts['order_status']}:</b> {status_text}",
+            f"<b>{texts['order_status']}:</b> {status_text} {status_emoji}",
             f"<b>{texts['order_date']}:</b> <code>{format_datetime(self.created_at)}</code>",
         ]
 

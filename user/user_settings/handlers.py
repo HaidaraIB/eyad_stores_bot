@@ -336,9 +336,12 @@ async def get_charge_balance_proof(update: Update, context: ContextTypes.DEFAULT
                 .format(order_id=order_id)
             )
 
+            from common.common import get_status_emoji
+            status_emoji = get_status_emoji(new_order.status)
             status_text = TEXTS[lang].get(
                 f"order_status_{new_order.status.value}", new_order.status.value
             )
+            status_text = f"{status_text} {status_emoji}"
 
             # Build order details
             payment_method_name = (

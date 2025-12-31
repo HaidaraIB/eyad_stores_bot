@@ -1,7 +1,7 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from common.lang_dicts import BUTTONS, TEXTS
 from common.keyboards import build_keyboard, build_back_button, build_back_to_home_page_button
-from common.common import escape_html, format_float
+from common.common import escape_html, format_float, get_status_emoji
 import models
 
 ORDERS_PER_PAGE = 15  # Number of orders per page
@@ -53,9 +53,10 @@ def build_order_status_keyboard(
         statuses = models.PurchaseOrderStatus
     
     for status in statuses:
+        status_emoji = get_status_emoji(status)
         status_text = TEXTS[lang].get(f"order_status_{status.value}", status.value)
         is_selected = status == current_status
-        button_text = f"{'🟢' if is_selected else '🔴'} {status_text}"
+        button_text = f"{'🟢' if is_selected else '🔴'} {status_text} {status_emoji}"
         callback_data = f"set_order_status_{order_type}_{status.value}"
         
         keyboard.append(
@@ -114,27 +115,30 @@ def build_orders_list_keyboard(
     for order in orders:
         if hasattr(order, 'amount'):  # ChargingBalanceOrder
             order_text = f"#{order.id} - {format_float(order.amount)}"
+            status_emoji = get_status_emoji(order.status)
             status_text = TEXTS[lang].get(
                 f"order_status_{order.status.value}", order.status.value
             )
             if is_admin:
-                order_text += f" - {status_text}"
+                order_text += f" - {status_text} {status_emoji}"
         elif hasattr(order, 'item'):  # PurchaseOrder
             item_name = order.item.name if order.item else "N/A"
             order_text = f"#{order.id} - {escape_html(item_name[:15])}"
+            status_emoji = get_status_emoji(order.status)
             status_text = TEXTS[lang].get(
                 f"order_status_{order.status.value}", order.status.value
             )
             if is_admin:
-                order_text += f" - {status_text}"
+                order_text += f" - {status_text} {status_emoji}"
         else:  # ApiPurchaseOrder
             game_name = (
                 order.api_game.get_display_name(lang) if order.api_game else "N/A"
             )
+            status_emoji = get_status_emoji(order.status)
             status_text = TEXTS[lang].get(
                 f"api_order_status_{order.status.value}", order.status.value
             )
-            order_text = f"#{order.id} - {escape_html(game_name[:15])} - {status_text}"
+            order_text = f"#{order.id} - {escape_html(game_name[:15])} - {status_text} {status_emoji}"
         
         keyboard.append([
             InlineKeyboardButton(
