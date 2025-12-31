@@ -37,6 +37,9 @@ class PurchaseOrder(Base):
         nullable=False,
     )
     admin_notes = sa.Column(sa.Text, nullable=True)  # Admin notes about the order
+    assigned_admin_id = sa.Column(
+        sa.BigInteger, nullable=True
+    )  # ID of the admin currently handling this order
 
     created_at = sa.Column(sa.DateTime, default=datetime.now)
     updated_at = sa.Column(sa.DateTime, default=datetime.now, onupdate=datetime.now)

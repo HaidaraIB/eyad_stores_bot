@@ -468,9 +468,10 @@ async def get_charge_balance_proof(update: Update, context: ContextTypes.DEFAULT
                         )
 
                     # If payment proof exists, send as photo with caption
+                    message = None
                     if payment_proof:
                         try:
-                            await context.bot.send_photo(
+                            message = await context.bot.send_photo(
                                 chat_id=admin_id,
                                 photo=payment_proof,
                                 caption=text,
@@ -479,7 +480,7 @@ async def get_charge_balance_proof(update: Update, context: ContextTypes.DEFAULT
                         except:
                             # If photo fails, try as document
                             try:
-                                await context.bot.send_document(
+                                message = await context.bot.send_document(
                                     chat_id=admin_id,
                                     document=payment_proof,
                                     caption=text,
@@ -487,18 +488,29 @@ async def get_charge_balance_proof(update: Update, context: ContextTypes.DEFAULT
                                 )
                             except:
                                 # If both fail, send as text message
-                                await context.bot.send_message(
+                                message = await context.bot.send_message(
                                     chat_id=admin_id,
                                     text=text,
                                     reply_markup=InlineKeyboardMarkup(actions_keyboard),
                                 )
                     else:
                         # No payment proof, send as text message
-                        await context.bot.send_message(
+                        message = await context.bot.send_message(
                             chat_id=admin_id,
                             text=text,
                             reply_markup=InlineKeyboardMarkup(actions_keyboard),
                         )
+                    
+                    # Store message ID in database
+                    if message:
+                        with models.session_scope() as s:
+                            admin_message = models.OrderAdminMessage(
+                                order_type="charging",
+                                order_id=order_id,
+                                admin_id=admin_id,
+                                message_id=message.message_id,
+                            )
+                            s.add(admin_message)
                 except:
                     continue
         except:

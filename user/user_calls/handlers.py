@@ -283,11 +283,22 @@ async def get_purchase_order_account_id(
                             from admin.orders_settings.keyboards import build_order_actions_keyboard
                             actions_keyboard = build_order_actions_keyboard(lang, order_id, "purchase")
                         
-                        await context.bot.send_message(
+                        message = await context.bot.send_message(
                             chat_id=admin_id,
                             text=text,
                             reply_markup=InlineKeyboardMarkup(actions_keyboard),
                         )
+                        
+                        # Store message ID in database
+                        if message:
+                            with models.session_scope() as s:
+                                admin_message = models.OrderAdminMessage(
+                                    order_type="purchase",
+                                    order_id=order_id,
+                                    admin_id=admin_id,
+                                    message_id=message.message_id,
+                                )
+                                s.add(admin_message)
                     except:
                         continue
             except:

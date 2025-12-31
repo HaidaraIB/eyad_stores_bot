@@ -24,6 +24,7 @@ from custom_filters import (
     OrderNotesReplyFilter,
     OrderAmountReplyFilter,
 )
+from sqlalchemy.orm import Session
 import models
 from Config import Config
 from sqlalchemy.orm import joinedload
@@ -32,6 +33,57 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Note: Order notes are now handled via reply to order messages
+
+
+async def check_and_assign_order(
+    context: ContextTypes.DEFAULT_TYPE,
+    order_obj,
+    order_type: str,
+    current_admin_id: int,
+    s: Session,
+) -> bool:
+    """
+    Check if order is already assigned to another admin.
+    If assigned to another admin, delete their message and notify them.
+    Returns: (is_allowed, error_message)
+    """
+    # If order is assigned to current admin, allow
+    if order_obj.assigned_admin_id:
+        if order_obj.assigned_admin_id == current_admin_id:
+            return True
+        else:
+            return False
+
+    # If order is not assigned, assign it to current admin
+    order_obj.assigned_admin_id = current_admin_id
+    s.commit()
+
+    admin_messages = (
+        s.query(models.OrderAdminMessage)
+        .filter(
+            models.OrderAdminMessage.order_type == order_type,
+            models.OrderAdminMessage.order_id == order_obj.id,
+            models.OrderAdminMessage.admin_id != current_admin_id,
+        )
+        .all()
+    )
+
+    # Delete messages from other admins
+    for admin_msg in admin_messages:
+        try:
+            await context.bot.delete_message(
+                chat_id=admin_msg.admin_id,
+                message_id=admin_msg.message_id,
+            )
+        except Exception as e:
+            logger.warning(
+                f"Failed to delete message {admin_msg.message_id} for admin {admin_msg.admin_id}: {e}"
+            )
+
+        # Remove from database
+        s.delete(admin_msg)
+
+    return True
 
 
 async def orders_settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -733,22 +785,61 @@ async def change_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE
         data = update.callback_query.data.replace("change_status_", "")
         order_type, order_id = data.split("_", 1)
         order_id = int(order_id)
+        current_admin_id = update.effective_user.id
 
         context.user_data["editing_order_id"] = order_id
         context.user_data["editing_order_type"] = order_type
 
-        if order_type == "charging":
-            current_status = None
-            with models.session_scope() as s:
+        current_status = None
+        with models.session_scope() as s:
+            if order_type == "charging":
                 order = s.get(models.ChargingBalanceOrder, order_id)
-                if order:
-                    current_status = order.status
-        else:
-            current_status = None
-            with models.session_scope() as s:
+            else:
                 order = s.get(models.PurchaseOrder, order_id)
-                if order:
-                    current_status = order.status
+            if order:
+                # Check if order status is terminal (cannot be changed)
+                terminal_statuses_charging = [
+                    models.ChargingOrderStatus.COMPLETED,
+                    models.ChargingOrderStatus.FAILED,
+                    models.ChargingOrderStatus.CANCELLED,
+                ]
+                terminal_statuses_purchase = [
+                    models.PurchaseOrderStatus.COMPLETED,
+                    models.PurchaseOrderStatus.FAILED,
+                    models.PurchaseOrderStatus.CANCELLED,
+                    models.PurchaseOrderStatus.REFUNDED,
+                ]
+                
+                is_terminal = False
+                if order_type == "charging":
+                    is_terminal = order.status in terminal_statuses_charging
+                else:
+                    is_terminal = order.status in terminal_statuses_purchase
+                
+                if is_terminal:
+                    await update.callback_query.answer(
+                        text=TEXTS[lang].get(
+                            "order_status_terminal",
+                            "⚠️ لا يمكن تغيير حالة الطلب لأنه في حالة نهائية",
+                        ),
+                        show_alert=True,
+                    )
+                    return
+                
+                # Check if order is assigned to another admin
+                is_allowed = await check_and_assign_order(
+                    context, order, order_type, current_admin_id, s
+                )
+                if not is_allowed:
+                    await update.callback_query.answer(
+                        text=TEXTS[lang].get(
+                            "order_already_assigned", "Order already assigned ❌"
+                        ),
+                        show_alert=True,
+                    )
+                    await update.callback_query.delete_message()
+                    return
+                current_status = order.status
 
         keyboard = build_order_status_keyboard(lang, current_status, order_type)
         keyboard.append(
@@ -777,11 +868,42 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         order_type, status_value = data.split("_", 1)
 
         order_id = context.user_data.get("editing_order_id")
+        current_admin_id = update.effective_user.id
 
         with models.session_scope() as s:
             user_obj = None
             if order_type == "charging":
                 order_obj = s.get(models.ChargingBalanceOrder, order_id)
+                if order_obj:
+                    # Check if order status is terminal (cannot be changed)
+                    terminal_statuses = [
+                        models.ChargingOrderStatus.COMPLETED,
+                        models.ChargingOrderStatus.FAILED,
+                        models.ChargingOrderStatus.CANCELLED,
+                    ]
+                    if order_obj.status in terminal_statuses:
+                        await update.callback_query.answer(
+                            text=TEXTS[lang].get(
+                                "order_status_terminal",
+                                "⚠️ لا يمكن تغيير حالة الطلب لأنه في حالة نهائية",
+                            ),
+                            show_alert=True,
+                        )
+                        return
+                    
+                    # Check if order is assigned to another admin
+                    is_allowed = await check_and_assign_order(
+                        context, order_obj, order_type, current_admin_id, s
+                    )
+                    if not is_allowed:
+                        await update.callback_query.answer(
+                            text=TEXTS[lang].get(
+                                "order_already_assigned", "Order already assigned ❌"
+                            ),
+                            show_alert=True,
+                        )
+                        await update.callback_query.delete_message()
+                        return
                 if order_obj:
                     # Get user first
                     user_obj = s.get(models.User, order_obj.user_id)
@@ -816,6 +938,37 @@ async def set_order_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 order_obj = s.get(models.PurchaseOrder, order_id)
                 if order_obj:
+                    # Check if order status is terminal (cannot be changed)
+                    terminal_statuses = [
+                        models.PurchaseOrderStatus.COMPLETED,
+                        models.PurchaseOrderStatus.FAILED,
+                        models.PurchaseOrderStatus.CANCELLED,
+                        models.PurchaseOrderStatus.REFUNDED,
+                    ]
+                    if order_obj.status in terminal_statuses:
+                        await update.callback_query.answer(
+                            text=TEXTS[lang].get(
+                                "order_status_terminal",
+                                "⚠️ لا يمكن تغيير حالة الطلب لأنه في حالة نهائية",
+                            ),
+                            show_alert=True,
+                        )
+                        return
+                    
+                    # Check if order is assigned to another admin
+                    is_allowed = await check_and_assign_order(
+                        context, order_obj, order_type, current_admin_id, s
+                    )
+                    if not is_allowed:
+                        await update.callback_query.answer(
+                            text=TEXTS[lang].get(
+                                "order_already_assigned", "Order already assigned ❌"
+                            ),
+                            show_alert=True,
+                        )
+                        await update.callback_query.delete_message()
+                        return
+                    
                     # Get user first
                     user_obj = s.get(models.User, order_obj.user_id)
                     if not user_obj:
@@ -1396,6 +1549,20 @@ async def get_order_notes_from_reply(
             )
             return
 
+        # Check if order is assigned to another admin
+        current_admin_id = update.effective_user.id
+        is_allowed = await check_and_assign_order(
+            context, order, order_type, current_admin_id, s
+        )
+        if not is_allowed:
+            await update.message.reply_text(
+                text=TEXTS[lang].get(
+                    "order_already_assigned", "Order already assigned ❌"
+                ),
+            )
+            await update.message.reply_to_message.delete()
+            return
+
         order.admin_notes = notes
 
     # Build updated order message
@@ -1565,6 +1732,20 @@ async def get_order_amount_from_reply(
             await update.message.reply_text(
                 text=TEXTS[lang].get("user_not_found", "User not found ❌"),
             )
+            return
+
+        # Check if order is assigned to another admin
+        current_admin_id = update.effective_user.id
+        is_allowed = await check_and_assign_order(
+            context, order, "charging", current_admin_id, s
+        )
+        if not is_allowed:
+            await update.message.reply_text(
+                text=TEXTS[lang].get(
+                    "order_already_assigned", "Order already assigned ❌"
+                ),
+            )
+            await update.message.reply_to_message.delete()
             return
 
         # Save old amount (convert to float for calculation)
