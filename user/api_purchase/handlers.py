@@ -521,10 +521,6 @@ async def get_instant_purchase_denomination(
             api = G2BulkAPI()
             game_code = context.user_data.get("api_game_code")
 
-            # Get required fields for the game
-            fields_data = await api.get_game_fields(game_code)
-            fields = fields_data.get("info", {}).get("fields", [])
-
             # Check if server is required
             servers = await api.get_game_servers(game_code)
             context.user_data["api_requires_server"] = servers is not None
@@ -571,10 +567,6 @@ async def get_instant_purchase_denomination(
                     show_alert=True,
                 )
                 return INSTANT_PURCHASE_DENOMINATION
-
-            # Get required fields for the game
-            fields_data = await api.get_game_fields(game_code)
-            fields = fields_data.get("info", {}).get("fields", [])
 
             # Check if server is required
             servers = await api.get_game_servers(game_code)
@@ -728,7 +720,8 @@ async def get_instant_purchase_server_id(
             player_id = context.user_data.get("api_player_id")
 
             # Validate player ID with server
-            validation_msg = await update.callback_query.message.reply_text(
+            validation_msg = await context.bot.send_message(
+                chat_id=update.effective_chat.id,
                 text=TEXTS[lang].get("validating_player_id", "Validating player ID..."),
             )
 
@@ -755,7 +748,8 @@ async def get_instant_purchase_server_id(
                         ),
                     )
                     # Go back to player ID input
-                    await update.callback_query.message.reply_text(
+                    await context.bot.send_message(
+                        chat_id=update.effective_chat.id,
                         text=TEXTS[lang].get("enter_player_id", "Enter Player ID:"),
                         reply_markup=build_player_id_keyboard(lang),
                     )
@@ -765,7 +759,8 @@ async def get_instant_purchase_server_id(
                     text=TEXTS[lang].get("player_id_invalid", "Invalid player ID ❌"),
                 )
                 # Go back to player ID input
-                await update.callback_query.message.reply_text(
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
                     text=TEXTS[lang].get("enter_player_id", "Enter Player ID:"),
                     reply_markup=build_player_id_keyboard(lang),
                 )
@@ -849,11 +844,12 @@ async def create_api_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             text=TEXTS[lang].get("error", "An error occurred ❌"),
                         )
                         return ConversationHandler.END
-                    
+
                     # Deduct balance in SDG (API already deducted from their balance)
                     from decimal import Decimal
+
                     user.balance -= Decimal(str(denom_price_sudan))
-                    
+
                     api_order = models.ApiPurchaseOrder(
                         user_id=update.effective_user.id,
                         api_order_id=api_order_id,
