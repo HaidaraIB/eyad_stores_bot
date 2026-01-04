@@ -129,6 +129,7 @@ def setup_and_run():
     # MANAGE USERS SETTINGS
     app.add_handler(manage_users_settings_handler)
     app.add_handler(export_users_handler)
+    app.add_handler(edit_user_balance_handler)
 
     # USER SETTINGS
     app.add_handler(user_settings_handler)

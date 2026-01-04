@@ -117,6 +117,33 @@ TEXTS = {
         "you_dont_have_permission_to_manage_force_join": "لا يمكنك تعديل صلاحيات الآدمنز",
         "you_dont_have_permission_to_view_ids": "لا يمكنك تعديل صلاحيات الآدمنز",
         "manage_users_settings_title": "إدارة المستخدمين 👥",
+        "edit_user_balance": "تعديل رصيد المستخدم",
+        "enter_user_id_for_balance": "أرسل معرف المستخدم الذي تريد تعديل رصيده:",
+        "invalid_user_id": "معرف المستخدم غير صحيح ❌",
+        "user_info": "معلومات المستخدم",
+        "add_deduct_balance": "إضافة/خصم مبلغ",
+        "set_new_balance": "تعيين رصيد جديد",
+        "zero_balance": "تصفير الرصيد",
+        "enter_amount_add_deduct": (
+            "أرسل المبلغ الذي تريد إضافته أو خصمه:\n"
+            "(للسالب أرسل رقم سالب، مثال: -50)"
+        ),
+        "enter_new_balance": "أرسل الرصيد الجديد:",
+        "balance_zeroed": (
+            "تم تصفير الرصيد بنجاح ✅\n"
+            "الرصيد السابق: <code>{old_balance}</code> SDG"
+        ),
+        "balance_updated_add_deduct": (
+            "تم {action} المبلغ بنجاح ✅\n"
+            "الرصيد السابق: <code>{old_balance}</code> SDG\n"
+            "المبلغ: <code>{amount}</code> SDG\n"
+            "الرصيد الجديد: <code>{new_balance}</code> SDG"
+        ),
+        "balance_updated_set": (
+            "تم تعيين الرصيد بنجاح ✅\n"
+            "الرصيد السابق: <code>{old_balance}</code> SDG\n"
+            "الرصيد الجديد: <code>{new_balance}</code> SDG"
+        ),
         "export_users_to_excel": "تصدير المستخدمين إلى Excel 📊",
         "exporting_users": "جاري تصدير المستخدمين...",
         "users_exported_success": "تم تصدير المستخدمين بنجاح ✅",
@@ -558,6 +585,32 @@ TEXTS = {
         "you_dont_have_permission_to_view_ids": "You don't have permission to view user/chat IDs",
         "manage_users_settings_title": "Manage Users 👥",
         "export_users_to_excel": "Export Users to Excel 📊",
+        "edit_user_balance": "Edit User Balance",
+        "enter_user_id_for_balance": "Send the user ID whose balance you want to edit:",
+        "invalid_user_id": "Invalid user ID ❌",
+        "user_info": "User Information",
+        "add_deduct_balance": "Add/Deduct Amount",
+        "set_new_balance": "Set New Balance",
+        "zero_balance": "Zero Balance",
+        "enter_amount_add_deduct": (
+            "Send the amount you want to add or deduct:\n"
+            "(For negative, send a negative number, e.g., -50)"
+        ),
+        "enter_new_balance": "Send the new balance:",
+        "balance_zeroed": (
+            "Balance zeroed successfully ✅\n"
+            "Previous balance: <code>{old_balance}</code> SDG"
+        ),
+        "balance_updated_add_deduct": ("Amount {action} successfully ✅\n"
+            "Previous balance: <code>{old_balance}</code> SDG\n"
+            "Amount: <code>{amount}</code> SDG\n"
+            "New balance: <code>{new_balance}</code> SDG"
+        ),
+        "balance_updated_set": (
+            "Balance set successfully ✅\n"
+            "Previous balance: <code>{old_balance}</code> SDG\n"
+            "New balance: <code>{new_balance}</code> SDG"
+        ),
         "exporting_users": "Exporting users...",
         "users_exported_success": "Users exported successfully ✅",
         "export_error": "An error occurred while exporting ❌",
@@ -965,6 +1018,10 @@ BUTTONS = {
         "order_status_updated": "تم تحديث حالة الطلب بنجاح ✅",
         "user": "المستخدم",
         "export_users_to_excel": "تصدير المستخدمين إلى Excel 📊",
+        "edit_user_balance": "تعديل رصيد المستخدم",
+        "add_deduct_balance": "إضافة/خصم مبلغ",
+        "set_new_balance": "تعيين رصيد جديد",
+        "zero_balance": "تصفير الرصيد",
         "games_settings": "إعدادات الألعاب 🎮",
         "items_settings": "إعدادات العناصر 🎯",
         "payment_methods_settings": "إعدادات طرق الدفع 💳",

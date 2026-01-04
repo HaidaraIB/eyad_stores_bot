@@ -1085,9 +1085,7 @@ async def remove_payment_address(update: Update, context: ContextTypes.DEFAULT_T
                 if update.callback_query.data.isnumeric():
                     await update.callback_query.edit_message_text(
                         text=TEXTS[lang]["home_page"],
-                        reply_markup=build_admin_keyboard(
-                            lang=lang, user_id=update.effective_user.id
-                        ),
+                        reply_markup=build_admin_keyboard(lang, update.effective_user.id),
                     )
                 else:
                     await update.callback_query.answer(
