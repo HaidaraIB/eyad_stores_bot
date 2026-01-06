@@ -15,6 +15,7 @@ from common.keyboards import (
 from common.lang_dicts import TEXTS, get_lang
 from common.back_to_home_page import back_to_user_home_page_handler
 from common.common import escape_html, format_float
+from common.decorators import is_user_banned
 from custom_filters import PrivateChat
 from start import start_command, admin_command
 from Config import Config
@@ -24,6 +25,7 @@ import models
 PURCHASE_ORDER_GAME, PURCHASE_ORDER_ITEM, PURCHASE_ORDER_ACCOUNT_ID = range(3)
 
 
+@is_user_banned
 async def purchase_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
@@ -53,6 +55,7 @@ async def purchase_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return PURCHASE_ORDER_GAME
 
 
+@is_user_banned
 async def get_purchase_order_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
@@ -97,6 +100,7 @@ async def get_purchase_order_game(update: Update, context: ContextTypes.DEFAULT_
 back_to_purchase_order_game = purchase_order
 
 
+@is_user_banned
 async def get_purchase_order_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
@@ -145,6 +149,7 @@ async def get_purchase_order_item(update: Update, context: ContextTypes.DEFAULT_
 back_to_purchase_order_item = get_purchase_order_game
 
 
+@is_user_banned
 async def get_purchase_order_account_id(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):

@@ -10,6 +10,7 @@ from common.keyboards import build_user_keyboard
 from common.lang_dicts import TEXTS, get_lang
 from common.back_to_home_page import back_to_user_home_page_handler
 from common.common import escape_html, format_float, get_exchange_rate
+from common.decorators import is_user_banned
 from custom_filters import PrivateChat
 from start import start_command, admin_command
 from services.g2bulk_api import G2BulkAPI
@@ -32,6 +33,7 @@ import models
 ) = range(4)
 
 
+@is_user_banned
 async def instant_purchase(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Entry point for instant purchase flow"""
     if PrivateChat().filter(update):
@@ -84,6 +86,7 @@ async def instant_purchase(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return ConversationHandler.END
 
 
+@is_user_banned
 async def get_instant_purchase_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle game selection and show denominations, or pagination"""
     if PrivateChat().filter(update):
@@ -301,6 +304,7 @@ def search_games(games: list, query: str, lang: models.Language = None) -> list:
     return results
 
 
+@is_user_banned
 async def handle_game_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle text message for game search"""
     if PrivateChat().filter(update):
@@ -417,6 +421,7 @@ async def handle_game_search(update: Update, context: ContextTypes.DEFAULT_TYPE)
             return INSTANT_PURCHASE_GAME
 
 
+@is_user_banned
 async def back_to_api_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Go back to games list (first page)"""
     if PrivateChat().filter(update):
@@ -447,6 +452,7 @@ async def back_to_api_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return INSTANT_PURCHASE_GAME
 
 
+@is_user_banned
 async def get_instant_purchase_denomination(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -613,6 +619,7 @@ async def get_instant_purchase_denomination(
 back_to_api_denom = get_instant_purchase_game
 
 
+@is_user_banned
 async def get_instant_purchase_player_id(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -693,6 +700,7 @@ async def get_instant_purchase_player_id(
 back_to_api_player_id = get_instant_purchase_denomination
 
 
+@is_user_banned
 async def get_instant_purchase_server_id(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -773,6 +781,7 @@ async def get_instant_purchase_server_id(
             return INSTANT_PURCHASE_SERVER_ID
 
 
+@is_user_banned
 async def create_api_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Create the order via API"""
     if PrivateChat().filter(update):

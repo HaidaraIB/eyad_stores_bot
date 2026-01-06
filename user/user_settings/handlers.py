@@ -22,12 +22,14 @@ from common.keyboards import (
 from common.lang_dicts import TEXTS, get_lang
 from common.back_to_home_page import back_to_user_home_page_handler
 from common.common import escape_html, format_float
+from common.decorators import is_user_banned
 from custom_filters import PrivateChat
 from Config import Config
 from start import start_command, admin_command
 import models
 
 
+@is_user_banned
 async def user_settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
@@ -45,6 +47,7 @@ user_settings_handler = CallbackQueryHandler(
 )
 
 
+@is_user_banned
 async def change_lang(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChat().filter(update):
         if update.callback_query.data in models.Language._member_names_:
@@ -80,6 +83,7 @@ change_lang_handler = CallbackQueryHandler(
 
 
 # Profile handler
+@is_user_banned
 async def user_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
@@ -115,6 +119,7 @@ user_profile_handler = CallbackQueryHandler(
 ) = range(4)
 
 
+@is_user_banned
 async def charge_balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
@@ -130,6 +135,7 @@ async def charge_balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return CHARGE_BALANCE_AMOUNT
 
 
+@is_user_banned
 async def get_charge_balance_payment_method(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -189,6 +195,7 @@ async def get_charge_balance_payment_method(
 back_to_charge_balance_pm = charge_balance
 
 
+@is_user_banned
 async def get_charge_balance_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
@@ -237,6 +244,7 @@ async def get_charge_balance_amount(update: Update, context: ContextTypes.DEFAUL
 back_to_charge_balance_amount = get_charge_balance_payment_method
 
 
+@is_user_banned
 async def get_charge_balance_payment_address(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -291,6 +299,7 @@ async def get_charge_balance_payment_address(
 back_to_charge_balance_addr = get_charge_balance_amount
 
 
+@is_user_banned
 async def get_charge_balance_proof(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
@@ -572,6 +581,7 @@ charge_balance_handler = ConversationHandler(
 
 
 # My Orders handlers
+@is_user_banned
 async def my_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
@@ -598,6 +608,7 @@ my_orders_handler = CallbackQueryHandler(
 )
 
 
+@is_user_banned
 async def show_charging_balance_orders(
     update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0
 ):
@@ -672,6 +683,7 @@ async def show_charging_balance_orders(
                 )
 
 
+@is_user_banned
 async def show_purchase_orders(
     update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0
 ):
@@ -722,6 +734,7 @@ async def show_purchase_orders(
             )
 
 
+@is_user_banned
 async def view_charging_balance_order(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -844,6 +857,7 @@ async def view_charging_balance_order(
                     )
 
 
+@is_user_banned
 async def view_purchase_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)
@@ -886,6 +900,7 @@ back_to_purchase_orders_handler = CallbackQueryHandler(
 )
 
 
+@is_user_banned
 async def handle_charging_balance_orders_pagination(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -899,6 +914,7 @@ async def handle_charging_balance_orders_pagination(
         await show_charging_balance_orders(update, context, page=page)
 
 
+@is_user_banned
 async def handle_purchase_orders_pagination(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -912,6 +928,7 @@ async def handle_purchase_orders_pagination(
         await show_purchase_orders(update, context, page=page)
 
 
+@is_user_banned
 async def handle_api_purchase_orders_pagination(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -956,6 +973,7 @@ view_purchase_order_handler = CallbackQueryHandler(
 )
 
 
+@is_user_banned
 async def show_api_purchase_orders(
     update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0
 ):
@@ -1006,6 +1024,7 @@ async def show_api_purchase_orders(
             )
 
 
+@is_user_banned
 async def view_api_purchase_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if PrivateChat().filter(update):
         lang = get_lang(update.effective_user.id)

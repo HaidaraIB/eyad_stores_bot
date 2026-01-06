@@ -76,6 +76,12 @@ async def check_if_user_member(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 async def check_joined(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Check if user is banned
+    with models.session_scope() as s:
+        user = s.get(models.User, update.effective_user.id)
+        if user and user.is_banned:
+            return
+    
     # Get all force join chats from database
     with models.session_scope() as s:
         force_join_chats = s.query(models.ForceJoinChat).all()

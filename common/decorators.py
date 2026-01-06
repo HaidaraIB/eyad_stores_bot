@@ -12,7 +12,7 @@ def is_user_banned(func):
     ):
         with models.session_scope() as s:
             user = s.get(models.User, update.effective_user.id)
-            if user.is_banned:
+            if user and user.is_banned:
                 return
         return await func(update, context, *args, **kwargs)
 
