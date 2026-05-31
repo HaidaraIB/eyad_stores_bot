@@ -1,7 +1,7 @@
 from telegram.ext import ContextTypes
 from services.provider_factory import get_provider
 import models
-from common.lang_dicts import TEXTS, get_lang
+from common.lang_dicts import TEXTS
 from common.common import escape_html, format_float
 import logging
 from Config import Config
@@ -37,71 +37,80 @@ async def poll_api_orders_status(context: ContextTypes.DEFAULT_TYPE):
                 )
                 .all()
             )
+            order_ids = [order.id for order in non_terminal_orders]
 
-            if not non_terminal_orders:
-                return
+        if not order_ids:
+            return
 
-            logger.info(f"Polling {len(non_terminal_orders)} API orders...")
+        logger.info(f"Polling {len(order_ids)} API orders...")
 
-            for order in non_terminal_orders:
-                try:
+        for order_id in order_ids:
+            try:
+                with models.session_scope() as s:
+                    order = s.get(models.ApiPurchaseOrder, order_id)
+                    if not order:
+                        continue
                     provider = get_provider(order.api_provider)
                     game_code = order.api_game_code
-                    status_result = await provider.get_order_status(
-                        str(order.api_order_id), game_code
-                    )
-
-                    new_status = status_result.status
-                    api_message = status_result.message or ""
-                    player_name = status_result.player_name
-                    voucher_codes = status_result.voucher_codes
-
+                    api_order_id = order.api_order_id
                     old_status = order.status
-                    status_changed = old_status != new_status
 
-                    with models.session_scope() as update_session:
-                        db_order = update_session.get(
-                            models.ApiPurchaseOrder, order.id
-                        )
-                        if db_order:
-                            db_order.status = new_status
-                            if api_message:
-                                db_order.api_message = api_message
-                            if player_name:
-                                db_order.player_name = player_name
-                            if voucher_codes:
-                                db_order.set_voucher_codes(voucher_codes)
+                status_result = await provider.get_order_status(
+                    str(api_order_id), game_code
+                )
 
-                            if status_changed and new_status in [
-                                models.ApiPurchaseOrderStatus.FAILED,
-                                models.ApiPurchaseOrderStatus.CANCELLED,
-                            ]:
-                                user = update_session.get(
-                                    models.User, db_order.user_id
-                                )
-                                if user:
-                                    user.balance += db_order.price_sudan
-                                    logger.info(
-                                        f"Refunded {db_order.price_sudan} SDG to user {user.user_id} "
-                                        f"for failed/cancelled order {db_order.api_order_id}"
-                                    )
+                new_status = status_result.status
+                api_message = status_result.message or ""
+                player_name = status_result.player_name
+                voucher_codes = status_result.voucher_codes
+                status_changed = old_status != new_status
 
-                            update_session.commit()
-
-                            if status_changed and db_order.is_terminal():
-                                await notify_user_order_status(
-                                    context,
-                                    db_order.id,
-                                    old_status,
-                                    new_status,
-                                )
-
-                except Exception as e:
-                    logger.error(
-                        f"Error polling order {order.api_order_id}: {str(e)}",
-                        exc_info=True,
+                with models.session_scope() as update_session:
+                    db_order = update_session.get(
+                        models.ApiPurchaseOrder, order_id
                     )
-                    continue
+                    if not db_order:
+                        continue
+                    db_order.status = new_status
+                    if api_message:
+                        db_order.api_message = api_message
+                    if player_name:
+                        db_order.player_name = player_name
+                    if voucher_codes:
+                        db_order.set_voucher_codes(voucher_codes)
+
+                    if status_changed and new_status in [
+                        models.ApiPurchaseOrderStatus.FAILED,
+                        models.ApiPurchaseOrderStatus.CANCELLED,
+                    ]:
+                        user = update_session.get(
+                            models.User, db_order.user_id
+                        )
+                        if user:
+                            user.balance += db_order.price_sudan
+                            logger.info(
+                                f"Refunded {db_order.price_sudan} SDG to user {user.user_id} "
+                                f"for failed/cancelled order {db_order.api_order_id}"
+                            )
+
+                if status_changed and new_status in [
+                    models.ApiPurchaseOrderStatus.COMPLETED,
+                    models.ApiPurchaseOrderStatus.FAILED,
+                    models.ApiPurchaseOrderStatus.CANCELLED,
+                ]:
+                    await notify_user_order_status(
+                        context,
+                        order_id,
+                        old_status,
+                        new_status,
+                    )
+
+            except Exception as e:
+                logger.error(
+                    f"Error polling order id={order_id}: {str(e)}",
+                    exc_info=True,
+                )
+                continue
 
     except Exception as e:
         logger.error(f"Error in poll_api_orders_status: {str(e)}", exc_info=True)
@@ -115,12 +124,18 @@ async def notify_user_order_status(
 ):
     """Second message after purchase: completed, failed, or cancelled."""
     try:
+        message = None
+        user_id = None
+        api_order_id = None
+        user = None
+        lang = models.Language.ARABIC
+
         with models.session_scope() as s:
             order = s.get(models.ApiPurchaseOrder, order_id)
             if not order:
                 return
-            lang = get_lang(order.user_id)
             user = s.get(models.User, order.user_id)
+            lang = user.lang if user else models.Language.ARABIC
 
             if new_status == models.ApiPurchaseOrderStatus.COMPLETED:
                 status_emoji = "✅"
@@ -158,17 +173,15 @@ async def notify_user_order_status(
                 f"<b>{TEXTS[lang].get('order_id', 'Order ID')}:</b> "
                 f"<code>{escape_html(str(order.api_order_id))}</code>\n"
             )
-            game_name = "N/A"
-            api_game = order.api_game
-            if not api_game:
-                api_game = (
-                    s.query(models.ApiGame)
-                    .filter(
-                        models.ApiGame.api_game_code == order.api_game_code,
-                        models.ApiGame.provider == order.api_provider,
-                    )
-                    .first()
+            api_game = (
+                s.query(models.ApiGame)
+                .filter(
+                    models.ApiGame.api_game_code == order.api_game_code,
+                    models.ApiGame.provider == order.api_provider,
                 )
+                .first()
+            )
+            game_name = "N/A"
             if api_game:
                 game_name = (
                     api_game.arabic_name
@@ -214,30 +227,30 @@ async def notify_user_order_status(
             user_id = order.user_id
             api_order_id = order.api_order_id
 
+        await context.bot.send_message(
+            chat_id=user_id,
+            text=message,
+            parse_mode="HTML",
+        )
+        if user:
             await context.bot.send_message(
-                chat_id=user_id,
-                text=message,
+                chat_id=Config.API_PURCHASES_ARCHIVE_CHANNEL,
+                text=(
+                    message
+                    + "\n\n"
+                    + f"<i>{TEXTS[lang].get('order_user_info', 'Order user info')}:</i>\n\n"
+                    + user.stringify(lang)
+                ),
                 parse_mode="HTML",
             )
-            if user:
-                await context.bot.send_message(
-                    chat_id=Config.API_PURCHASES_ARCHIVE_CHANNEL,
-                    text=(
-                        message
-                        + "\n\n"
-                        + f"<i>{TEXTS[lang].get('order_user_info', 'Order user info')}:</i>\n\n"
-                        + user.stringify(lang)
-                    ),
-                    parse_mode="HTML",
-                )
 
-            logger.info(
-                "Notified user %s about order %s status: %s -> %s",
-                user_id,
-                api_order_id,
-                old_status.value,
-                new_status.value,
-            )
+        logger.info(
+            "Notified user %s about order %s status: %s -> %s",
+            user_id,
+            api_order_id,
+            old_status.value,
+            new_status.value,
+        )
 
     except Exception as e:
         logger.error(
